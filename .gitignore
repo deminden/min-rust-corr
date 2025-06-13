@@ -1,0 +1,38 @@
+# Rust
+/target
+Cargo.lock
+
+# Data files
+*.gz
+*.tar.gz
+*.csv
+*.tsv
+*.txt
+data/
+outputs/
+
+# R files
+.Rhistory
+.RData
+.Rproj.user
+*.Rproj
+
+# System files
+.DS_Store
+Thumbs.db
+*~
+.#*
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Log files
+*.log

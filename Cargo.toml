@@ -1,0 +1,29 @@
+[package]
+name = "mincorr"
+version = "0.1.0"
+edition = "2025"
+authors = ["Denis Demin"]
+description = "High-performance correlation analysis for large data matrices"
+repository = "https://github.com/deminden/min-rust-corr"
+license = "MIT"
+keywords = ["correlation", "statistics", "bioinformatics", "blas"]
+categories = ["science", "algorithms"]
+
+[build-dependencies]
+cc = "1"
+
+[dependencies]
+csv = "1.2" 
+ndarray = { version = "0.15", features = ["rayon"] }
+rayon = "1.8"
+tar = "0.4"
+flate2 = "1.0"
+kendalls = "1.0"
+libc = "0.2"
+strum = "0.25"
+strum_macros = "0.25"
+
+# [features]
+# default = ["openblas"]
+# openblas = ["ndarray-linalg/openblas-static"]
+# intel-mkl = ["ndarray-linalg/intel-mkl-static"]
