@@ -1,5 +1,6 @@
 # Rust
 /target
+bicorr_example/
 Cargo.lock
 
 # Data files

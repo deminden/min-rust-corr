@@ -11,10 +11,12 @@ use strum_macros::{EnumString, Display};
 mod pearson;
 mod spearman;
 mod kendall;
+mod bicor;
 
 use pearson::pearson_correlation_matrix;
 use spearman::spearman_correlation_matrix;
 use kendall::kendall_correlation_matrix;
+use bicor::bicor_correlation_matrix;
 
 #[derive(EnumString, Display)]
 #[strum(ascii_case_insensitive)]
@@ -25,6 +27,8 @@ enum CorrelationType {
     Spearman,
     #[strum(serialize = "Kendall")]
     Kendall,
+    #[strum(serialize = "Bicor", serialize = "Biweight", to_string = "Bicor")]
+    Bicor,
 }
 
 fn build_data_matrix(row_ids: &[String], row_data: &HashMap<String, Array1<f64>>) -> Array2<f64> {
@@ -99,7 +103,7 @@ fn read_matrix_data<R: Read>(reader: R) -> Result<HashMap<String, Array1<f64>>, 
 fn parse_args() -> Result<(String, CorrelationType, Option<usize>, bool), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
     if args.len() < 3 {
-        return Err("Usage: program <input_file> <correlation_type> [num_threads] [--time]\nCorrelation types: pearson, spearman, kendall\nnum_threads: number of threads to use (default: all available)\n--time: enable detailed timing output".into());
+        return Err("Usage: program <input_file> <correlation_type> [num_threads] [--time]\nCorrelation types: pearson, spearman, kendall, bicor\nnum_threads: number of threads to use (default: all available)\n--time: enable detailed timing output".into());
     }
 
     let correlation_type: CorrelationType = args[2].parse()?;
@@ -185,6 +189,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         CorrelationType::Kendall => {
             println!("Computing Kendall correlations...");
             kendall_correlation_matrix(&data_matrix)
+        },
+        CorrelationType::Bicor => {
+            println!("Computing biweight midcorrelations (bicor)...");
+            bicor_correlation_matrix(&data_matrix)
         },
     };
     let calc_duration = calc_start.map(|start| start.elapsed());

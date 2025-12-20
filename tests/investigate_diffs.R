@@ -87,11 +87,19 @@ end_time <- Sys.time()
 timing_results$kendall <- as.numeric(difftime(end_time, start_time, units = "secs"))
 cat(" completed in", round(timing_results$kendall, 3), "seconds\n")
 
+cat("- Computing bicor correlations...")
+start_time <- Sys.time()
+r_bicor <- bicor(t(mat), use = "pairwise.complete.obs")
+end_time <- Sys.time()
+timing_results$bicor <- as.numeric(difftime(end_time, start_time, units = "secs"))
+cat(" completed in", round(timing_results$bicor, 3), "seconds\n")
+
 
 r_cors <- list(
   pearson  = r_pearson,
   spearman = r_spearman,
-  kendall  = r_kendall
+  kendall  = r_kendall,
+  bicor    = r_bicor
 )
 
 cat("\nTimings\n")

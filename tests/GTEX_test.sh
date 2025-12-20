@@ -24,6 +24,7 @@ echo "Running Rust correlations on $output_file..."
 cargo run --release --manifest-path "$repo_root/Cargo.toml" -- "$output_file" pearson --time
 cargo run --release --manifest-path "$repo_root/Cargo.toml" -- "$output_file" spearman --time
 cargo run --release --manifest-path "$repo_root/Cargo.toml" -- "$output_file" kendall --time
+cargo run --release --manifest-path "$repo_root/Cargo.toml" -- "$output_file" bicor --time
 
 # Run investigation script to compare results
 echo "Running R comparison analysis..."

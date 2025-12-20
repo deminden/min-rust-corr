@@ -1,6 +1,6 @@
 # High-Performance Correlation Analysis
 
-Minimalistic Rust implementation for computing Pearson, Spearman, and Kendall correlations on large data matrices using BLAS optimizations.
+Minimalistic Rust implementation for computing Pearson, Spearman, Kendall, and biweight midcorrelations (bicor) on large data matrices using BLAS optimizations.
 Results match R implementations.
 
 ## Usage
@@ -15,6 +15,7 @@ cargo build --release
 cargo run --release -- data.tsv.gz pearson --time # time of execution tracked
 cargo run --release -- data.tsv.gz spearman 8     # 8 threads
 cargo run --release -- data.tsv.gz kendall        # all cores
+cargo run --release -- data.tsv.gz bicor          # biweight midcorrelation
 ```
 
 ### As a Crate
@@ -27,7 +28,7 @@ mincorr = { git = "https://github.com/deminden/min-rust-corr" }
 
 Use in code:
 ```rust
-use mincorr::{pearson_correlation_matrix, spearman_correlation_matrix, kendall_correlation_matrix};
+use mincorr::{pearson_correlation_matrix, spearman_correlation_matrix, kendall_correlation_matrix, bicor_correlation_matrix};
 use ndarray::Array2;
 
 let data: Array2<f64> = /* your data matrix */;
@@ -36,6 +37,7 @@ let data: Array2<f64> = /* your data matrix */;
 let pearson_corr = pearson_correlation_matrix(&data);
 let spearman_corr = spearman_correlation_matrix(&data);
 let kendall_corr = kendall_correlation_matrix(&data);
+let bicor_corr = bicor_correlation_matrix(&data);
 ```
 
 ## Input Format
