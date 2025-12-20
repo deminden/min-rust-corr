@@ -85,7 +85,7 @@ gct_file <- file.path(data_folder, "GTEx_Analysis_v10_RNASeQCv2.4.2_gene_reads.g
 annotation_file <- annotation_dest
 
 # Read GCT file (ignoring the first two rows for metadata)
-gct_data <- fread(gct_file, skip = 2)
+gct_data <- fread(gct_file, skip = 2, sep = "\t")
 gct_data <- as.data.frame(gct_data)
 
 # Read annotation file
@@ -134,16 +134,20 @@ normalize_counts <- function(tissue, tissue_df, gct_data) {
   # Write normalised counts if requested
   if (normalised) {
     norm_counts <- counts(dds, normalized = TRUE)
+    norm_out <- data.frame(Gene = rownames(norm_counts), norm_counts, check.names = FALSE)
     norm_file <- file.path(output_folder_norm, paste0(tissue, "_normalised_counts.tsv.gz"))
-    write.table(norm_counts, file = gzfile(norm_file), sep = "\t", col.names = TRUE, quote = FALSE)
+    write.table(norm_out, file = gzfile(norm_file), sep = "\t",
+                col.names = TRUE, row.names = FALSE, quote = FALSE)
   }
   
   # Write VST-transformed data if requested
   if (vst) {
     vsd <- vst(dds)
     vst_counts <- assay(vsd)
+    vst_out <- data.frame(Gene = rownames(vst_counts), vst_counts, check.names = FALSE)
     vst_file <- file.path(output_folder_vst, paste0(tissue, "_vst_counts.tsv.gz"))
-    write.table(vst_counts, file = gzfile(vst_file), sep = "\t", col.names = TRUE, quote = FALSE)
+    write.table(vst_out, file = gzfile(vst_file), sep = "\t",
+                col.names = TRUE, row.names = FALSE, quote = FALSE)
   }
 }
 
