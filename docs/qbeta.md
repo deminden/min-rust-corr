@@ -1,6 +1,6 @@
-## qbeta (Rmath port) notes for HellCor
+## qbeta (Rmath port) notes for Hellinger correlation
 
-This project includes a Rust port of R's `qbeta()` (quantile of the Beta
+This project includes a Rust port of Rmath `qbeta()` (quantile of the Beta
 distribution) under `src/hellinger/`. The goal is parity with R for practical
 HellCor workloads (moderate tails, typical shapes), and it matches R across the
 test suite that reflects those regimes.
@@ -43,11 +43,7 @@ faithful to R in practice.
 ### Empirical HellCor parity
 
 End-to-end comparisons against the R `HellCor` package (C version) show max
-absolute differences on full matrices at ~1e-10 or better:
-
-- `gene_expression.tsv.gz`: `1.53e-10`
-- `bladder_small_590genes.tsv.gz`: `1.99e-10`
-- `bladder_large_2950genes.tsv.gz`: `1.60e-12`
+absolute differences on full matrices at ~1e-10 or better on bulk RNA gene expression data.
 
 ### Running the check
 
