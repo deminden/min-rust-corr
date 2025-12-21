@@ -53,26 +53,6 @@ ROW002     45.12       23.45       67.89
 
 Supports `.gz` compression.
 
-## Usage with GTEx dataset
-
-```bash
-# Process all GTEx tissues
-./examples/process_GTEX_tissues.sh
-
-# Process specific tissue with custom threads
-./examples/process_GTEX_tissues.sh Bladder 8
-```
-
-## Test with sample data
-
-```bash
-# Test with 10k genes subset
-./tests/GTEX_test.sh
-
-# Compare results with R implementations  
-Rscript tests/investigate_diffs.R data/your_file.tsv.gz
-```
-
 
 ## Output
 
@@ -106,7 +86,7 @@ GTEx bladder tissue (N = 77, 590-gene subset)
 | Spearman | 0.008s | 0.030s | 3.8x |
 | Kendall | 0.050s | 0.97s | 19.4x |
 | Bicor | 0.004s | 0.020s | 5.0x |
-| Hellcor | 61s* | 107s | 1.8x |
+| Hellcor | 61s | 107s | 1.8x |
 
 GTEx bladder tissue (N = 77, 2,950 genes)
 
@@ -117,3 +97,23 @@ GTEx bladder tissue (N = 77, 2,950 genes)
 | Kendall | 1.7s | 22.6s | 13.3x |
 | Bicor | 0.070s | 0.074s | 1.1x |
 | Hellcor | 1575s | 3183s | 2.0x |
+
+## Usage with GTEx dataset
+
+```bash
+# Process all GTEx tissues
+./examples/process_GTEX_tissues.sh
+
+# Process specific tissue with custom threads
+./examples/process_GTEX_tissues.sh Bladder 8
+```
+
+## Test with sample data
+
+```bash
+# Test with 10k genes subset
+./tests/GTEX_test.sh
+
+# Compare results with R implementations  
+Rscript tests/investigate_diffs.R data/your_file.tsv.gz
+```
