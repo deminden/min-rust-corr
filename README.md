@@ -150,5 +150,5 @@ GTEx bladder tissue (N = 77, 2950 genes)
 # Compare results with R implementations  
 Rscript crates/core/tests/investigate_diffs.R data/your_file.tsv.gz
 ```
-## Licence
-License: GPL-2.0-or-later for now, because bicor and hellcor started as close ports of the R reference implementations (WGCNA and HellCor) to ensure output parity. I plan to rewrite these algorithms independently and then move the project to a permissive license (MIT/Apache-2.0).
+## License
+License: GPL-2.0-or-later for now, because bicor and hellcor started as close ports of the R reference implementations (WGCNA and HellCor) to ensure output parity. Earlier commits were temporarily labeled MIT; however, once bicor (commit f8b5fc) and hellcor (commit b6802a4) were introduced as close ports for R-parity, the project was relicensed to GPL for compliance. I plan to rewrite these algorithms independently and then move the project to a permissive license (MIT/Apache-2.0).
