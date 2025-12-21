@@ -14,12 +14,12 @@ cd min-rust-corr
 cargo build --workspace --release
 
 # Run correlations
-MINCORR='cargo run -p mincorr_cli --release --'
-$MINCORR data.tsv.gz pearson --time # time of execution tracked
-$MINCORR data.tsv.gz spearman 8     # 8 threads
-$MINCORR data.tsv.gz kendall        # all cores
-$MINCORR data.tsv.gz bicor          # biweight midcorrelation
-$MINCORR data.tsv.gz hellcor        # Hellinger correlation
+mincorr() { ./target/release/mincorr_cli "$@"; }
+mincorr data.tsv.gz pearson --time # time of execution tracked
+mincorr data.tsv.gz spearman 8     # 8 threads
+mincorr data.tsv.gz kendall        # all cores
+mincorr data.tsv.gz bicor          # biweight midcorrelation
+mincorr data.tsv.gz hellcor        # Hellinger correlation
 ```
 
 ### As a Crate
@@ -121,7 +121,7 @@ GTEx bladder tissue (N = 77, 590-gene subset)
 | Bicor | 0.004s | 0.020s | 5.0x |
 | Hellcor | 61s | 107s | 1.8x |
 
-GTEx bladder tissue (N = 77, 2,950 genes)
+GTEx bladder tissue (N = 77, 2950 genes)
 
 | Method | Rust (16 threads) | R (32 threads) | Speedup (R/Rust) |
 | --- | --- | --- | --- |
