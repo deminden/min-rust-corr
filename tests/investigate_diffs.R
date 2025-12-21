@@ -1,16 +1,22 @@
 #!/usr/bin/env Rscript
 # investigate_diffs.R - Compare Rust vs R correlation matrices
 
+lib_path <- file.path(getwd(), "r_libs")
+if (!dir.exists(lib_path)) {
+  dir.create(lib_path, recursive = TRUE)
+}
+.libPaths(c(lib_path, .libPaths()))
+
 install_if_missing <- function(pkg, bioc = FALSE) {
   if (!requireNamespace(pkg, quietly = TRUE)) {
     message("Installing ", pkg, " ...")
     if (bioc) {
       if (!requireNamespace("BiocManager", quietly = TRUE)) {
-        install.packages("BiocManager", repos = "https://cloud.r-project.org")
+        install.packages("BiocManager", repos = "https://cloud.r-project.org", lib = lib_path)
       }
-      BiocManager::install(pkg, ask = FALSE, update = FALSE)
+      BiocManager::install(pkg, ask = FALSE, update = FALSE, lib = lib_path)
     } else {
-      install.packages(pkg, repos = "https://cloud.r-project.org")
+      install.packages(pkg, repos = "https://cloud.r-project.org", lib = lib_path)
     }
   }
 }
@@ -18,25 +24,35 @@ install_if_missing <- function(pkg, bioc = FALSE) {
 
 invisible(lapply(c("data.table", "DescTools", "stringr", "pcaPP", "matrixStats"), install_if_missing))
 install_if_missing("WGCNA", bioc = TRUE)
+install_if_missing("HellCor")
 
 suppressPackageStartupMessages({
   library(data.table)
   library(DescTools)  # For Lin's CCC
   library(stringr)
   library(WGCNA)
+  library(HellCor)
   library(pcaPP)  # for cor.fk fast Kendall
   library(matrixStats)
 })
 
-
-allowWGCNAThreads()
-
 # Require expression file path as first CLI argument
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) < 1) {
-  stop("Usage: Rscript investigate_diffs.R <data_file>")
+  stop("Usage: Rscript investigate_diffs.R <data_file> [threads] [methods]")
 }
 data_file <- args[1]
+threads <- if (length(args) >= 2) as.integer(args[2]) else NA
+methods <- if (length(args) >= 3) strsplit(args[3], ",")[[1]] else NULL
+if (!is.null(methods)) {
+  methods <- tolower(trimws(methods))
+}
+
+if (!is.na(threads) && threads > 0) {
+  allowWGCNAThreads(nThreads = threads)
+} else {
+  allowWGCNAThreads()
+}
 
 # Extract input basename for constructing Rust output filenames
 input_basename <- tools::file_path_sans_ext(basename(data_file))
@@ -61,46 +77,102 @@ cat("Matrix dimensions:", nrow(mat), "rows x", ncol(mat), "columns\n")
 timing_results <- list()
 
 # Pearson correlation with WGCNA
-cat("- Computing Pearson correlations...")
-start_time <- Sys.time()
-r_pearson <- cor(t(mat), method = "pearson", use = "pairwise.complete.obs")
-end_time <- Sys.time()
-timing_results$pearson <- as.numeric(difftime(end_time, start_time, units = "secs"))
-cat(" completed in", round(timing_results$pearson, 3), "seconds\n")
+if (is.null(methods) || "pearson" %in% methods) {
+  cat("- Computing Pearson correlations...")
+  start_time <- Sys.time()
+  r_pearson <- cor(t(mat), method = "pearson", use = "pairwise.complete.obs")
+  end_time <- Sys.time()
+  timing_results$pearson <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  cat(" completed in", round(timing_results$pearson, 3), "seconds\n")
+}
 
 # Spearman correlation via fast Pearson on ranked data
-cat("- Computing Spearman correlations...")
-start_time <- Sys.time()
-# Rank each row across columns efficiently
-rank_mat <- matrixStats::rowRanks(mat, ties.method = "average")
-r_spearman <- cor(t(rank_mat), method = "pearson", use = "pairwise.complete.obs")
-end_time <- Sys.time()
-timing_results$spearman <- as.numeric(difftime(end_time, start_time, units = "secs"))
-cat(" completed in", round(timing_results$spearman, 3), "seconds\n")
+if (is.null(methods) || "spearman" %in% methods) {
+  cat("- Computing Spearman correlations...")
+  start_time <- Sys.time()
+  # Rank each row across columns efficiently
+  rank_mat <- matrixStats::rowRanks(mat, ties.method = "average")
+  r_spearman <- cor(t(rank_mat), method = "pearson", use = "pairwise.complete.obs")
+  end_time <- Sys.time()
+  timing_results$spearman <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  cat(" completed in", round(timing_results$spearman, 3), "seconds\n")
+}
 
 
-cat("- Computing Kendall correlations...")
-start_time <- Sys.time()
-# Use fast Kendall tau from pcaPP (O(n log n))
-r_kendall <- cor.fk(t(mat))
-end_time <- Sys.time()
-timing_results$kendall <- as.numeric(difftime(end_time, start_time, units = "secs"))
-cat(" completed in", round(timing_results$kendall, 3), "seconds\n")
+if (is.null(methods) || "kendall" %in% methods) {
+  cat("- Computing Kendall correlations...")
+  start_time <- Sys.time()
+  # Use fast Kendall tau from pcaPP (O(n log n))
+  r_kendall <- cor.fk(t(mat))
+  end_time <- Sys.time()
+  timing_results$kendall <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  cat(" completed in", round(timing_results$kendall, 3), "seconds\n")
+}
 
-cat("- Computing bicor correlations...")
-start_time <- Sys.time()
-r_bicor <- bicor(t(mat), use = "pairwise.complete.obs")
-end_time <- Sys.time()
-timing_results$bicor <- as.numeric(difftime(end_time, start_time, units = "secs"))
-cat(" completed in", round(timing_results$bicor, 3), "seconds\n")
+if (is.null(methods) || "bicor" %in% methods) {
+  cat("- Computing bicor correlations...")
+  start_time <- Sys.time()
+  r_bicor <- bicor(t(mat), use = "pairwise.complete.obs")
+  end_time <- Sys.time()
+  timing_results$bicor <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  cat(" completed in", round(timing_results$bicor, 3), "seconds\n")
+}
 
+if (is.null(methods) || "hellcor" %in% methods) {
+  cat("- Computing hellcor correlations...")
+  start_time <- Sys.time()
+  n_rows <- nrow(mat)
+  r_hellcor <- matrix(NA_real_, nrow = n_rows, ncol = n_rows)
+  rownames(r_hellcor) <- rownames(mat)
+  colnames(r_hellcor) <- rownames(mat)
 
-r_cors <- list(
-  pearson  = r_pearson,
-  spearman = r_spearman,
-  kendall  = r_kendall,
-  bicor    = r_bicor
-)
+  if (!is.na(threads) && threads > 1 && .Platform$OS.type != "windows") {
+    pairs <- do.call(
+      rbind,
+      lapply(seq_len(n_rows - 1), function(i) cbind(i, (i + 1):n_rows))
+    )
+    results <- parallel::mclapply(
+      seq_len(nrow(pairs)),
+      function(idx) {
+        i <- pairs[idx, 1]
+        j <- pairs[idx, 2]
+        res <- HellCor::HellCor(mat[i, ], mat[j, ], Kmax = 20L, Lmax = 20L, K = 0L, L = 0L,
+                                alpha = 6.0, pval.comp = FALSE, conf.level = NULL, C.version = TRUE)
+        list(i = i, j = j, val = res$Hcor)
+      },
+      mc.cores = threads
+    )
+    for (i in seq_len(n_rows)) {
+      r_hellcor[i, i] <- 1.0
+    }
+    for (entry in results) {
+      r_hellcor[entry$i, entry$j] <- entry$val
+      r_hellcor[entry$j, entry$i] <- entry$val
+    }
+  } else {
+    for (i in seq_len(n_rows)) {
+      r_hellcor[i, i] <- 1.0
+      if (i < n_rows) {
+        for (j in (i + 1):n_rows) {
+          res <- HellCor::HellCor(mat[i, ], mat[j, ], Kmax = 20L, Lmax = 20L, K = 0L, L = 0L,
+                                  alpha = 6.0, pval.comp = FALSE, conf.level = NULL, C.version = TRUE)
+          r_hellcor[i, j] <- res$Hcor
+          r_hellcor[j, i] <- res$Hcor
+        }
+      }
+    }
+  }
+  end_time <- Sys.time()
+  timing_results$hellcor <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  cat(" completed in", round(timing_results$hellcor, 3), "seconds\n")
+}
+
+r_cors <- list()
+if (exists("r_pearson")) r_cors$pearson <- r_pearson
+if (exists("r_spearman")) r_cors$spearman <- r_spearman
+if (exists("r_kendall")) r_cors$kendall <- r_kendall
+if (exists("r_bicor")) r_cors$bicor <- r_bicor
+if (exists("r_hellcor")) r_cors$hellcor <- r_hellcor
 
 cat("\nTimings\n")
 for (method in names(timing_results)) {

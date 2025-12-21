@@ -36,3 +36,9 @@ Thumbs.db
 
 # Log files
 *.log
+
+# Example code
+/Hellcor_src
+
+# R
+/r_libs

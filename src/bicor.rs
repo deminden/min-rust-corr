@@ -178,7 +178,7 @@ fn prepare_col_bicor(
     PreparedRow { values: res, na_flag: false }
 }
 
-pub fn bicor_correlation_matrix(data: &Array2<f64>) -> Array2<f64> {
+pub fn correlation_matrix(data: &Array2<f64>) -> Array2<f64> {
     let (n_rows, n_cols) = data.dim();
     if n_rows == 0 || n_cols == 0 {
         return Array2::<f64>::zeros((n_rows, n_rows));

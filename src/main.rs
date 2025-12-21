@@ -1,5 +1,5 @@
-// Compute pairwise Pearson, Spearman, or Kendall correlations in matrices
-// Uses BLAS for speed improvements
+// Compute pairwise correlations (Pearson, Spearman, Kendall, biweight midcorrelation, hellcor) in matrices.
+// BLAS accelerates Pearson/Spearman
 
 use std::{collections::HashMap, error::Error, fs::File, io::{Cursor, Read}, env, time::Instant};
 use csv::{ReaderBuilder, WriterBuilder};
@@ -12,11 +12,15 @@ mod pearson;
 mod spearman;
 mod kendall;
 mod bicor;
+mod hellcor;
+mod hellinger;
+mod rank;
 
-use pearson::pearson_correlation_matrix;
-use spearman::spearman_correlation_matrix;
-use kendall::kendall_correlation_matrix;
-use bicor::bicor_correlation_matrix;
+use pearson::correlation_matrix as pearson_correlation_matrix;
+use spearman::correlation_matrix as spearman_correlation_matrix;
+use kendall::correlation_matrix as kendall_correlation_matrix;
+use bicor::correlation_matrix as bicor_correlation_matrix;
+use hellcor::correlation_matrix as hellcor_correlation_matrix;
 
 #[derive(EnumString, Display)]
 #[strum(ascii_case_insensitive)]
@@ -29,6 +33,8 @@ enum CorrelationType {
     Kendall,
     #[strum(serialize = "Bicor", serialize = "Biweight", to_string = "Bicor")]
     Bicor,
+    #[strum(serialize = "Hellcor", serialize = "Hellinger", to_string = "Hellcor")]
+    Hellcor,
 }
 
 fn build_data_matrix(row_ids: &[String], row_data: &HashMap<String, Array1<f64>>) -> Array2<f64> {
@@ -44,25 +50,7 @@ fn build_data_matrix(row_ids: &[String], row_data: &HashMap<String, Array1<f64>>
     matrix
 }
 
-pub fn rank_data(data: &Array1<f64>) -> Array1<f64> {
-    let mut indexed_data: Vec<(usize, f64)> = data.iter().cloned().enumerate().collect();
-    indexed_data.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
-
-    let mut ranks = vec![0.0; data.len()];
-    let mut i = 0;
-    while i < data.len() {
-        let mut j = i;
-        while j < data.len() - 1 && indexed_data[j].1 == indexed_data[j + 1].1 {
-            j += 1;
-        }
-        let rank = (i + 1..=j + 1).sum::<usize>() as f64 / (j - i + 1) as f64;
-        for k in i..=j {
-            ranks[indexed_data[k].0] = rank;
-        }
-        i = j + 1;
-    }
-    Array1::from(ranks)
-}
+// rank_data is defined in src/rank.rs for shared use.
 
 fn read_matrix_data<R: Read>(reader: R) -> Result<HashMap<String, Array1<f64>>, Box<dyn Error>> {
     let mut row_data = HashMap::new();
@@ -103,7 +91,7 @@ fn read_matrix_data<R: Read>(reader: R) -> Result<HashMap<String, Array1<f64>>, 
 fn parse_args() -> Result<(String, CorrelationType, Option<usize>, bool), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
     if args.len() < 3 {
-        return Err("Usage: program <input_file> <correlation_type> [num_threads] [--time]\nCorrelation types: pearson, spearman, kendall, bicor\nnum_threads: number of threads to use (default: all available)\n--time: enable detailed timing output".into());
+        return Err("Usage: program <input_file> <correlation_type> [num_threads] [--time]\nCorrelation types: pearson, spearman, kendall, bicor, hellcor\nnum_threads: number of threads to use (default: all available)\n--time: enable detailed timing output".into());
     }
 
     let correlation_type: CorrelationType = args[2].parse()?;
@@ -193,6 +181,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         CorrelationType::Bicor => {
             println!("Computing biweight midcorrelations (bicor)...");
             bicor_correlation_matrix(&data_matrix)
+        },
+        CorrelationType::Hellcor => {
+            println!("Computing Hellinger correlations (hellcor)...");
+            hellcor_correlation_matrix(&data_matrix)
         },
     };
     let calc_duration = calc_start.map(|start| start.elapsed());

@@ -3,10 +3,10 @@ use std::sync::Mutex;
 use rayon::prelude::*;
 use kendalls::tau_b;
 
-use crate::rank_data;
+use crate::rank::rank_data;
 
 /// Compute Kendall (Tau-b) correlation matrix for a given data matrix
-pub fn kendall_correlation_matrix(data: &Array2<f64>) -> Array2<f64> {
+pub fn correlation_matrix(data: &Array2<f64>) -> Array2<f64> {
     let size = data.nrows();
 
     let correlation_matrix = Mutex::new(Array2::<f64>::from_elem((size, size), f64::NAN));

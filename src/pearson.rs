@@ -1,6 +1,6 @@
 use ndarray::Array2;
 
-pub fn pearson_correlation_matrix(data: &Array2<f64>) -> Array2<f64> {
+pub fn correlation_matrix(data: &Array2<f64>) -> Array2<f64> {
     let (_n_rows, n_cols) = data.dim();
     
     let means = data.mean_axis(ndarray::Axis(1)).unwrap().insert_axis(ndarray::Axis(1));
