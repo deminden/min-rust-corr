@@ -24,12 +24,12 @@ cargo run -p mincorr_cli --release -- data.tsv.gz hellcor        # Hellinger cor
 Add to `Cargo.toml`:
 ```toml
 [dependencies]
-mincorr_core = { git = "https://github.com/deminden/min-rust-corr" }
+mincorr = { package = "mincorr_core", git = "https://github.com/deminden/min-rust-corr" }
 ```
 
 Use in code:
 ```rust
-use mincorr_core::{pearson, spearman, kendall, bicor, hellcor};
+use mincorr::{pearson, spearman, kendall, bicor, hellcor};
 use ndarray::Array2;
 
 let data: Array2<f64> = /* your data matrix */;
