@@ -2,7 +2,7 @@
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-repo_root="$(cd "$script_dir/.." && pwd)"
+repo_root="$(cd "$script_dir/../.." && pwd)"
 
 # Generate normalized bladder tissue data without VST file
 Rscript "$repo_root/examples/normalised_and_vst_counts_in_tissues.R" keyword=Bladder vst=FALSE
@@ -41,11 +41,11 @@ echo "Created: $output_file"
 # Run all correlation types using Rust code
 echo "Running Rust correlations on $output_file..."
 
-cargo run --release --manifest-path "$repo_root/Cargo.toml" -- "$output_file" pearson --time
-cargo run --release --manifest-path "$repo_root/Cargo.toml" -- "$output_file" spearman --time
-cargo run --release --manifest-path "$repo_root/Cargo.toml" -- "$output_file" kendall --time
-cargo run --release --manifest-path "$repo_root/Cargo.toml" -- "$output_file" bicor --time
-cargo run --release --manifest-path "$repo_root/Cargo.toml" -- "$output_file" hellcor --time
+cargo run -p mincorr_cli --release --manifest-path "$repo_root/Cargo.toml" -- "$output_file" pearson --time
+cargo run -p mincorr_cli --release --manifest-path "$repo_root/Cargo.toml" -- "$output_file" spearman --time
+cargo run -p mincorr_cli --release --manifest-path "$repo_root/Cargo.toml" -- "$output_file" kendall --time
+cargo run -p mincorr_cli --release --manifest-path "$repo_root/Cargo.toml" -- "$output_file" bicor --time
+cargo run -p mincorr_cli --release --manifest-path "$repo_root/Cargo.toml" -- "$output_file" hellcor --time
 
 # Run investigation script to compare results
 echo "Running R comparison analysis..."

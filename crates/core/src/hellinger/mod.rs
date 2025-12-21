@@ -6,3 +6,4 @@ mod dbeta;
 
 pub use qbeta::qbeta;
 pub use dbeta::dbeta;
+pub use pbeta::pbeta;

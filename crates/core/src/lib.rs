@@ -7,3 +7,4 @@ pub mod hellcor;
 pub mod rank;
 
 pub use rank::rank_data;
+pub use hellcor::hellcor_pair;

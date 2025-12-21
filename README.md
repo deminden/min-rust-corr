@@ -9,14 +9,14 @@ Results match R implementations. Pearson and Spearman are using BLAS optimizatio
 
 ```bash
 # Build
-cargo build --release
+cargo build --workspace --release
 
 # Run correlations
-cargo run --release -- data.tsv.gz pearson --time # time of execution tracked
-cargo run --release -- data.tsv.gz spearman 8     # 8 threads
-cargo run --release -- data.tsv.gz kendall        # all cores
-cargo run --release -- data.tsv.gz bicor          # biweight midcorrelation
-cargo run --release -- data.tsv.gz hellcor        # Hellinger correlation
+cargo run -p mincorr_cli --release -- data.tsv.gz pearson --time # time of execution tracked
+cargo run -p mincorr_cli --release -- data.tsv.gz spearman 8     # 8 threads
+cargo run -p mincorr_cli --release -- data.tsv.gz kendall        # all cores
+cargo run -p mincorr_cli --release -- data.tsv.gz bicor          # biweight midcorrelation
+cargo run -p mincorr_cli --release -- data.tsv.gz hellcor        # Hellinger correlation
 ```
 
 ### As a Crate
@@ -24,12 +24,12 @@ cargo run --release -- data.tsv.gz hellcor        # Hellinger correlation
 Add to `Cargo.toml`:
 ```toml
 [dependencies]
-mincorr = { git = "https://github.com/deminden/min-rust-corr" }
+mincorr_core = { git = "https://github.com/deminden/min-rust-corr" }
 ```
 
 Use in code:
 ```rust
-use mincorr::{pearson, spearman, kendall, bicor, hellcor};
+use mincorr_core::{pearson, spearman, kendall, bicor, hellcor};
 use ndarray::Array2;
 
 let data: Array2<f64> = /* your data matrix */;
@@ -41,6 +41,12 @@ let kendall_corr = kendall::correlation_matrix(&data);
 let bicor_corr = bicor::correlation_matrix(&data);
 let hellcor_corr = hellcor::correlation_matrix(&data);
 ```
+
+### Python Extension
+
+The Python extension lives in `crates/py` (module name `mincorr`) and is built with maturin.
+See `crates/py/pyproject.toml` for build metadata. Build/install with:
+`cd crates/py && python -m pip install maturin && maturin develop --release`
 
 ## Input Format
 
@@ -112,8 +118,8 @@ GTEx bladder tissue (N = 77, 2,950 genes)
 
 ```bash
 # Quick test with 500 genes subset
-./tests/GTEX_test.sh
+./crates/core/tests/GTEx_test.sh
 
 # Compare results with R implementations  
-Rscript tests/investigate_diffs.R data/your_file.tsv.gz
+Rscript crates/core/tests/investigate_diffs.R data/your_file.tsv.gz
 ```

@@ -225,7 +225,7 @@ fn dump_debug(
     }
 }
 
-fn hellcor_pair(
+fn hellcor_pair_impl(
     i: usize,
     j: usize,
     x: &HellcorRow,
@@ -392,7 +392,33 @@ fn hellcor_pair(
     etafunc(h2)
 }
 
-pub fn correlation_matrix(data: &Array2<f64>) -> Array2<f64> {
+pub fn hellcor_pair(x: &[f64], y: &[f64], alpha: f64) -> f64 {
+    if x.len() != y.len() {
+        return f64::NAN;
+    }
+
+    let kmax = DEFAULT_KMAX;
+    let lmax = DEFAULT_LMAX;
+    let max_k = kmax.max(lmax);
+
+    let x_row = prepare_row(ArrayView1::from(x), max_k, alpha);
+    let y_row = prepare_row(ArrayView1::from(y), max_k, alpha);
+
+    let debug_written = AtomicBool::new(false);
+    hellcor_pair_impl(
+        0,
+        1,
+        &x_row,
+        &y_row,
+        kmax,
+        lmax,
+        alpha,
+        None,
+        &debug_written,
+    )
+}
+
+fn correlation_matrix_impl(data: &Array2<f64>, alpha: f64) -> Array2<f64> {
     let (n_rows, n_cols) = data.dim();
     if n_rows == 0 || n_cols == 0 {
         return Array2::<f64>::zeros((n_rows, n_rows));
@@ -400,7 +426,6 @@ pub fn correlation_matrix(data: &Array2<f64>) -> Array2<f64> {
 
     let kmax = DEFAULT_KMAX;
     let lmax = DEFAULT_LMAX;
-    let alpha = DEFAULT_ALPHA;
     let max_k = kmax.max(lmax);
 
     let rows: Vec<HellcorRow> = (0..n_rows)
@@ -427,7 +452,7 @@ pub fn correlation_matrix(data: &Array2<f64>) -> Array2<f64> {
             let mut row = vec![f64::NAN; n_rows];
             row[i] = 1.0;
             for j in i + 1..n_rows {
-                row[j] = hellcor_pair(
+                row[j] = hellcor_pair_impl(
                     i,
                     j,
                     &rows[i],
@@ -453,4 +478,12 @@ pub fn correlation_matrix(data: &Array2<f64>) -> Array2<f64> {
     }
 
     corr
+}
+
+pub fn correlation_matrix(data: &Array2<f64>) -> Array2<f64> {
+    correlation_matrix_impl(data, DEFAULT_ALPHA)
+}
+
+pub fn correlation_matrix_with_alpha(data: &Array2<f64>, alpha: f64) -> Array2<f64> {
+    correlation_matrix_impl(data, alpha)
 }

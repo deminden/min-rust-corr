@@ -8,19 +8,11 @@ use flate2::{read::{GzDecoder, MultiGzDecoder}, write::GzEncoder, Compression};
 use tar::{Archive, Builder, Header};
 use strum_macros::{EnumString, Display};
 
-mod pearson;
-mod spearman;
-mod kendall;
-mod bicor;
-mod hellcor;
-mod hellinger;
-mod rank;
-
-use pearson::correlation_matrix as pearson_correlation_matrix;
-use spearman::correlation_matrix as spearman_correlation_matrix;
-use kendall::correlation_matrix as kendall_correlation_matrix;
-use bicor::correlation_matrix as bicor_correlation_matrix;
-use hellcor::correlation_matrix as hellcor_correlation_matrix;
+use mincorr_core::pearson::correlation_matrix as pearson_correlation_matrix;
+use mincorr_core::spearman::correlation_matrix as spearman_correlation_matrix;
+use mincorr_core::kendall::correlation_matrix as kendall_correlation_matrix;
+use mincorr_core::bicor::correlation_matrix as bicor_correlation_matrix;
+use mincorr_core::hellcor::correlation_matrix as hellcor_correlation_matrix;
 
 #[derive(EnumString, Display)]
 #[strum(ascii_case_insensitive)]

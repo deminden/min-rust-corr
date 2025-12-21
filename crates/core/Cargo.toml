@@ -1,0 +1,12 @@
+[package]
+name = "mincorr_core"
+version = "0.2.1"
+edition = "2024"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+kendalls = "1.0.0"
+ndarray = { version = "0.17.1", features = ["rayon"] }
+rayon = "1.11.0"
