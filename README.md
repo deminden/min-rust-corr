@@ -111,7 +111,7 @@ GTEx bladder tissue (N = 77, 2,950 genes)
 ## Test with sample data
 
 ```bash
-# Test with 10k genes subset
+# Quick test with 500 genes subset
 ./tests/GTEX_test.sh
 
 # Compare results with R implementations  
