@@ -1,5 +1,5 @@
 [package]
-name = "mincorr_core"
+name = "mincorr"
 version = "0.2.1"
 edition = "2024"
 license = "GPL-2.0-or-later"

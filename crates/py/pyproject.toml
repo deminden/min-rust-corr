@@ -3,7 +3,7 @@ requires = ["maturin>=1.0,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "mincorr"
+name = "mincorrpy"
 version = "0.2.1"
 requires-python = ">=3.8"
 license = { text = "GPL-2.0-or-later" }

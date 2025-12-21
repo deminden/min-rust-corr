@@ -27,7 +27,7 @@ mincorr data.tsv.gz hellcor        # Hellinger correlation
 Add to `Cargo.toml`:
 ```toml
 [dependencies]
-mincorr = { package = "mincorr_core", git = "https://github.com/deminden/min-rust-corr" }
+mincorr = { git = "https://github.com/deminden/min-rust-corr" }
 ```
 
 Use in code:
@@ -47,7 +47,7 @@ let hellcor_corr = hellcor::matrix(&data);
 
 ### Python Extension
 
-The Python extension lives in `crates/py` (module name `mincorr`) and is built with maturin.
+The Python extension lives in `crates/py` (package name `mincorrpy`, module name `mincorr`) and is built with maturin.
 See `crates/py/pyproject.toml` for build metadata. Install from GitHub:
 ```bash
 git clone https://github.com/deminden/min-rust-corr

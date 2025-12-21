@@ -169,13 +169,13 @@ fn qbeta_against_r() {
         if extreme_p && huge_ab {
             continue;
         }
-        let rust_val = mincorr_core::hellinger::qbeta(*p, *a, *b, *lower_tail, *log_p);
+        let rust_val = mincorr::hellinger::qbeta(*p, *a, *b, *lower_tail, *log_p);
         if !approx_equal(rust_val, *r_val) {
             let diff = (rust_val - r_val).abs();
             let rel = diff / 1.0_f64.max(r_val.abs()).max(rust_val.abs());
             let ulp = ulp_diff(rust_val, *r_val);
-            let rust_p_at_r = mincorr_core::hellinger::pbeta(*r_val, *a, *b, *lower_tail, false);
-            let rust_p_at_rust = mincorr_core::hellinger::pbeta(rust_val, *a, *b, *lower_tail, false);
+            let rust_p_at_r = mincorr::hellinger::pbeta(*r_val, *a, *b, *lower_tail, false);
+            let rust_p_at_rust = mincorr::hellinger::pbeta(rust_val, *a, *b, *lower_tail, false);
             panic!(
                 "mismatch at {idx}: p={p:.17e} a={a:.17e} b={b:.17e} lower_tail={lower_tail} log_p={log_p} rust={rust_val:.17e} r={r_val:.17e} abs={diff:.3e} rel={rel:.3e} ulp={ulp} rust_p_at_r={rust_p_at_r:.17e} rust_p_at_rust={rust_p_at_rust:.17e}"
             );
