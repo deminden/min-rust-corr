@@ -45,8 +45,13 @@ let hellcor_corr = hellcor::correlation_matrix(&data);
 ### Python Extension
 
 The Python extension lives in `crates/py` (module name `mincorr`) and is built with maturin.
-See `crates/py/pyproject.toml` for build metadata. Build/install with:
-`cd crates/py && python -m pip install maturin && maturin develop --release`
+See `crates/py/pyproject.toml` for build metadata. Install from GitHub:
+```bash
+git clone https://github.com/deminden/min-rust-corr
+cd min-rust-corr/crates/py
+python -m pip install maturin
+maturin develop --release
+```
 
 ## Input Format
 
