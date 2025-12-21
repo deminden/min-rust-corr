@@ -53,6 +53,25 @@ python -m pip install maturin
 maturin develop --release
 ```
 
+Usage example (pairwise + matrix):
+```python
+import numpy as np
+import mincorr
+
+x = np.array([1.0, 2.0, 3.0, 4.0], dtype=float)
+y = np.array([1.0, 2.0, 3.0, 4.0], dtype=float)
+
+data = np.vstack([x, y])
+
+# Pairwise correlations
+print(mincorr.pearson_pair(x, y))
+print(mincorr.hellcor_pair(x, y, 6.0))
+
+# Full matrix correlations
+print(mincorr.pearson_matrix(data))
+print(mincorr.hellcor_matrix(data, 6.0))
+```
+
 ## Input Format
 
 TSV/CSV with row IDs as first column, data values as remaining columns:
