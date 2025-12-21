@@ -65,11 +65,11 @@ data = np.vstack([x, y])
 
 # Pairwise correlations
 print(mincorr.pearson_pair(x, y))
-print(mincorr.hellcor_pair(x, y, 6.0))
+print(mincorr.hellcor_pair(x, y, 6.0)) # alpha = 6.0 (default value, can be skipped)
 
 # Full matrix correlations
 print(mincorr.pearson_matrix(data))
-print(mincorr.hellcor_matrix(data, 6.0))
+print(mincorr.hellcor_matrix(data))
 ```
 
 ## Input Format
