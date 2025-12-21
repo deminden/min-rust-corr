@@ -2,6 +2,7 @@
 name = "mincorr_cli"
 version = "0.2.1"
 edition = "2024"
+license = "GPL-2.0-or-later"
 
 [[bin]]
 name = "mincorr_cli"

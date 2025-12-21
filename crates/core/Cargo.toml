@@ -2,6 +2,7 @@
 name = "mincorr_core"
 version = "0.2.1"
 edition = "2024"
+license = "GPL-2.0-or-later"
 
 [lib]
 path = "src/lib.rs"
