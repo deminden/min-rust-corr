@@ -216,3 +216,7 @@ pub fn correlation_matrix(data: &Array2<f64>) -> Array2<f64> {
 
     corr
 }
+
+pub fn matrix(data: &Array2<f64>) -> Array2<f64> {
+    correlation_matrix(data)
+}

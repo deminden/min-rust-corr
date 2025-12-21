@@ -55,3 +55,7 @@ pub fn correlation_matrix(data: &Array2<f64>) -> Array2<f64> {
 
     correlation_matrix.into_inner().unwrap()
 } 
+
+pub fn matrix(data: &Array2<f64>) -> Array2<f64> {
+    correlation_matrix(data)
+}

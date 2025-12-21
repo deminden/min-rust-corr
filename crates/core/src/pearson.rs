@@ -17,3 +17,7 @@ pub fn correlation_matrix(data: &Array2<f64>) -> Array2<f64> {
     // Element-wise division to get correlation matrix
     &cov_matrix / &std_matrix
 } 
+
+pub fn matrix(data: &Array2<f64>) -> Array2<f64> {
+    correlation_matrix(data)
+}

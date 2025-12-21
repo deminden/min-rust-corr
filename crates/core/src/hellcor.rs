@@ -487,3 +487,11 @@ pub fn correlation_matrix(data: &Array2<f64>) -> Array2<f64> {
 pub fn correlation_matrix_with_alpha(data: &Array2<f64>, alpha: f64) -> Array2<f64> {
     correlation_matrix_impl(data, alpha)
 }
+
+pub fn matrix(data: &Array2<f64>) -> Array2<f64> {
+    correlation_matrix(data)
+}
+
+pub fn matrix_with_alpha(data: &Array2<f64>, alpha: f64) -> Array2<f64> {
+    correlation_matrix_with_alpha(data, alpha)
+}

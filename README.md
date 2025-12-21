@@ -9,14 +9,17 @@ Results match R implementations. Pearson and Spearman are using BLAS optimizatio
 
 ```bash
 # Build
+git clone https://github.com/deminden/min-rust-corr
+cd min-rust-corr
 cargo build --workspace --release
 
 # Run correlations
-cargo run -p mincorr_cli --release -- data.tsv.gz pearson --time # time of execution tracked
-cargo run -p mincorr_cli --release -- data.tsv.gz spearman 8     # 8 threads
-cargo run -p mincorr_cli --release -- data.tsv.gz kendall        # all cores
-cargo run -p mincorr_cli --release -- data.tsv.gz bicor          # biweight midcorrelation
-cargo run -p mincorr_cli --release -- data.tsv.gz hellcor        # Hellinger correlation
+MINCORR='cargo run -p mincorr_cli --release --'
+$MINCORR data.tsv.gz pearson --time # time of execution tracked
+$MINCORR data.tsv.gz spearman 8     # 8 threads
+$MINCORR data.tsv.gz kendall        # all cores
+$MINCORR data.tsv.gz bicor          # biweight midcorrelation
+$MINCORR data.tsv.gz hellcor        # Hellinger correlation
 ```
 
 ### As a Crate
@@ -35,11 +38,11 @@ use ndarray::Array2;
 let data: Array2<f64> = /* your data matrix */;
 
 // Compute correlations
-let pearson_corr = pearson::correlation_matrix(&data);
-let spearman_corr = spearman::correlation_matrix(&data);
-let kendall_corr = kendall::correlation_matrix(&data);
-let bicor_corr = bicor::correlation_matrix(&data);
-let hellcor_corr = hellcor::correlation_matrix(&data);
+let pearson_corr = pearson::matrix(&data);
+let spearman_corr = spearman::matrix(&data);
+let kendall_corr = kendall::matrix(&data);
+let bicor_corr = bicor::matrix(&data);
+let hellcor_corr = hellcor::matrix(&data);
 ```
 
 ### Python Extension

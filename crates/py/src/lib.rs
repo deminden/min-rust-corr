@@ -11,6 +11,23 @@ fn pair_matrix_from_slices(x: &[f64], y: &[f64]) -> Array2<f64> {
     Array2::from_shape_vec((2, n), flat).expect("pair matrix shape mismatch")
 }
 
+fn owned_pair(
+    x: PyReadonlyArray1<'_, f64>,
+    y: PyReadonlyArray1<'_, f64>,
+) -> PyResult<(Vec<f64>, Vec<f64>)> {
+    let x_owned = x.as_array().to_owned();
+    let y_owned = y.as_array().to_owned();
+
+    if x_owned.len() != y_owned.len() {
+        return Err(PyValueError::new_err("x and y must have the same length"));
+    }
+
+    let x_slice = x_owned.as_slice().expect("owned array is contiguous");
+    let y_slice = y_owned.as_slice().expect("owned array is contiguous");
+
+    Ok((x_slice.to_vec(), y_slice.to_vec()))
+}
+
 #[pyfunction]
 #[pyo3(signature = (x, y, alpha = 6.0))]
 fn hellcor_pair(
@@ -19,17 +36,8 @@ fn hellcor_pair(
     y: PyReadonlyArray1<'_, f64>,
     alpha: f64,
 ) -> PyResult<f64> {
-    let x_owned = x.as_array().to_owned();
-    let y_owned = y.as_array().to_owned();
-
-    if x_owned.len() != y_owned.len() {
-        return Err(PyValueError::new_err("x and y must have the same length"));
-    }
-
-    let x_slice = x_owned.as_slice().expect("owned array is contiguous");
-    let y_slice = y_owned.as_slice().expect("owned array is contiguous");
-
-    Ok(py.detach(|| mincorr_core::hellcor_pair(x_slice, y_slice, alpha)))
+    let (x_vals, y_vals) = owned_pair(x, y)?;
+    Ok(py.detach(|| mincorr_core::hellcor_pair(&x_vals, &y_vals, alpha)))
 }
 
 #[pyfunction]
@@ -38,17 +46,8 @@ fn pearson_pair(
     x: PyReadonlyArray1<'_, f64>,
     y: PyReadonlyArray1<'_, f64>,
 ) -> PyResult<f64> {
-    let x_owned = x.as_array().to_owned();
-    let y_owned = y.as_array().to_owned();
-
-    if x_owned.len() != y_owned.len() {
-        return Err(PyValueError::new_err("x and y must have the same length"));
-    }
-
-    let x_slice = x_owned.as_slice().expect("owned array is contiguous");
-    let y_slice = y_owned.as_slice().expect("owned array is contiguous");
-
-    let data = pair_matrix_from_slices(x_slice, y_slice);
+    let (x_vals, y_vals) = owned_pair(x, y)?;
+    let data = pair_matrix_from_slices(&x_vals, &y_vals);
     let corr = py.detach(|| mincorr_core::pearson::correlation_matrix(&data));
     Ok(corr[[0, 1]])
 }
@@ -59,17 +58,8 @@ fn spearman_pair(
     x: PyReadonlyArray1<'_, f64>,
     y: PyReadonlyArray1<'_, f64>,
 ) -> PyResult<f64> {
-    let x_owned = x.as_array().to_owned();
-    let y_owned = y.as_array().to_owned();
-
-    if x_owned.len() != y_owned.len() {
-        return Err(PyValueError::new_err("x and y must have the same length"));
-    }
-
-    let x_slice = x_owned.as_slice().expect("owned array is contiguous");
-    let y_slice = y_owned.as_slice().expect("owned array is contiguous");
-
-    let data = pair_matrix_from_slices(x_slice, y_slice);
+    let (x_vals, y_vals) = owned_pair(x, y)?;
+    let data = pair_matrix_from_slices(&x_vals, &y_vals);
     let corr = py.detach(|| mincorr_core::spearman::correlation_matrix(&data));
     Ok(corr[[0, 1]])
 }
@@ -80,17 +70,8 @@ fn kendall_pair(
     x: PyReadonlyArray1<'_, f64>,
     y: PyReadonlyArray1<'_, f64>,
 ) -> PyResult<f64> {
-    let x_owned = x.as_array().to_owned();
-    let y_owned = y.as_array().to_owned();
-
-    if x_owned.len() != y_owned.len() {
-        return Err(PyValueError::new_err("x and y must have the same length"));
-    }
-
-    let x_slice = x_owned.as_slice().expect("owned array is contiguous");
-    let y_slice = y_owned.as_slice().expect("owned array is contiguous");
-
-    let data = pair_matrix_from_slices(x_slice, y_slice);
+    let (x_vals, y_vals) = owned_pair(x, y)?;
+    let data = pair_matrix_from_slices(&x_vals, &y_vals);
     let corr = py.detach(|| mincorr_core::kendall::correlation_matrix(&data));
     Ok(corr[[0, 1]])
 }
@@ -101,17 +82,8 @@ fn bicor_pair(
     x: PyReadonlyArray1<'_, f64>,
     y: PyReadonlyArray1<'_, f64>,
 ) -> PyResult<f64> {
-    let x_owned = x.as_array().to_owned();
-    let y_owned = y.as_array().to_owned();
-
-    if x_owned.len() != y_owned.len() {
-        return Err(PyValueError::new_err("x and y must have the same length"));
-    }
-
-    let x_slice = x_owned.as_slice().expect("owned array is contiguous");
-    let y_slice = y_owned.as_slice().expect("owned array is contiguous");
-
-    let data = pair_matrix_from_slices(x_slice, y_slice);
+    let (x_vals, y_vals) = owned_pair(x, y)?;
+    let data = pair_matrix_from_slices(&x_vals, &y_vals);
     let corr = py.detach(|| mincorr_core::bicor::correlation_matrix(&data));
     Ok(corr[[0, 1]])
 }
