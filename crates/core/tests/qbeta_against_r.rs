@@ -155,6 +155,11 @@ fn rand_cases(n: usize) -> Vec<Case> {
 
 #[test]
 fn qbeta_against_r() {
+    if Command::new("Rscript").arg("--version").output().is_err() {
+        eprintln!("Rscript not available; skipping qbeta_against_r");
+        return;
+    }
+
     let mut cases = deterministic_cases();
     cases.extend(rand_cases(1000));
 
