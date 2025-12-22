@@ -3,6 +3,8 @@ use numpy::{IntoPyArray, PyArray2, PyReadonlyArray1, PyReadonlyArray2};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
+use ::mincorr as mincorr_core;
+
 fn pair_matrix_from_slices(x: &[f64], y: &[f64]) -> Array2<f64> {
     let n = x.len();
     let mut flat = Vec::with_capacity(n * 2);
@@ -37,7 +39,7 @@ fn hellcor_pair(
     alpha: f64,
 ) -> PyResult<f64> {
     let (x_vals, y_vals) = owned_pair(x, y)?;
-    Ok(py.detach(|| mincorr::hellcor_pair(&x_vals, &y_vals, alpha)))
+    Ok(py.detach(|| mincorr_core::hellcor_pair(&x_vals, &y_vals, alpha)))
 }
 
 #[pyfunction]
@@ -48,7 +50,7 @@ fn pearson_pair(
 ) -> PyResult<f64> {
     let (x_vals, y_vals) = owned_pair(x, y)?;
     let data = pair_matrix_from_slices(&x_vals, &y_vals);
-    let corr = py.detach(|| mincorr::pearson::correlation_matrix(&data));
+    let corr = py.detach(|| mincorr_core::pearson::correlation_matrix(&data));
     Ok(corr[[0, 1]])
 }
 
@@ -60,7 +62,7 @@ fn spearman_pair(
 ) -> PyResult<f64> {
     let (x_vals, y_vals) = owned_pair(x, y)?;
     let data = pair_matrix_from_slices(&x_vals, &y_vals);
-    let corr = py.detach(|| mincorr::spearman::correlation_matrix(&data));
+    let corr = py.detach(|| mincorr_core::spearman::correlation_matrix(&data));
     Ok(corr[[0, 1]])
 }
 
@@ -72,7 +74,7 @@ fn kendall_pair(
 ) -> PyResult<f64> {
     let (x_vals, y_vals) = owned_pair(x, y)?;
     let data = pair_matrix_from_slices(&x_vals, &y_vals);
-    let corr = py.detach(|| mincorr::kendall::correlation_matrix(&data));
+    let corr = py.detach(|| mincorr_core::kendall::correlation_matrix(&data));
     Ok(corr[[0, 1]])
 }
 
@@ -84,35 +86,35 @@ fn bicor_pair(
 ) -> PyResult<f64> {
     let (x_vals, y_vals) = owned_pair(x, y)?;
     let data = pair_matrix_from_slices(&x_vals, &y_vals);
-    let corr = py.detach(|| mincorr::bicor::correlation_matrix(&data));
+    let corr = py.detach(|| mincorr_core::bicor::correlation_matrix(&data));
     Ok(corr[[0, 1]])
 }
 
 #[pyfunction]
 fn pearson_matrix(py: Python<'_>, data: PyReadonlyArray2<'_, f64>) -> PyResult<Py<PyArray2<f64>>> {
     let data_owned = data.as_array().to_owned();
-    let corr = py.detach(|| mincorr::pearson::correlation_matrix(&data_owned));
+    let corr = py.detach(|| mincorr_core::pearson::correlation_matrix(&data_owned));
     Ok(corr.into_pyarray(py).into())
 }
 
 #[pyfunction]
 fn spearman_matrix(py: Python<'_>, data: PyReadonlyArray2<'_, f64>) -> PyResult<Py<PyArray2<f64>>> {
     let data_owned = data.as_array().to_owned();
-    let corr = py.detach(|| mincorr::spearman::correlation_matrix(&data_owned));
+    let corr = py.detach(|| mincorr_core::spearman::correlation_matrix(&data_owned));
     Ok(corr.into_pyarray(py).into())
 }
 
 #[pyfunction]
 fn kendall_matrix(py: Python<'_>, data: PyReadonlyArray2<'_, f64>) -> PyResult<Py<PyArray2<f64>>> {
     let data_owned = data.as_array().to_owned();
-    let corr = py.detach(|| mincorr::kendall::correlation_matrix(&data_owned));
+    let corr = py.detach(|| mincorr_core::kendall::correlation_matrix(&data_owned));
     Ok(corr.into_pyarray(py).into())
 }
 
 #[pyfunction]
 fn bicor_matrix(py: Python<'_>, data: PyReadonlyArray2<'_, f64>) -> PyResult<Py<PyArray2<f64>>> {
     let data_owned = data.as_array().to_owned();
-    let corr = py.detach(|| mincorr::bicor::correlation_matrix(&data_owned));
+    let corr = py.detach(|| mincorr_core::bicor::correlation_matrix(&data_owned));
     Ok(corr.into_pyarray(py).into())
 }
 
@@ -124,7 +126,7 @@ fn hellcor_matrix(
     alpha: f64,
 ) -> PyResult<Py<PyArray2<f64>>> {
     let data_owned = data.as_array().to_owned();
-    let corr = py.detach(|| mincorr::hellcor::correlation_matrix_with_alpha(&data_owned, alpha));
+    let corr = py.detach(|| mincorr_core::hellcor::correlation_matrix_with_alpha(&data_owned, alpha));
     Ok(corr.into_pyarray(py).into())
 }
 
