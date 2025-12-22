@@ -1,5 +1,5 @@
 use ndarray::Array2;
-use numpy::{IntoPyArray, PyArray2, PyReadonlyArray1, PyReadonlyArray2};
+use numpy::{IntoPyArray, PyArray1, PyArray2, PyReadonlyArray1, PyReadonlyArray2};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
@@ -92,29 +92,29 @@ fn bicor_pair(
 
 #[pyfunction]
 fn pearson_matrix(py: Python<'_>, data: PyReadonlyArray2<'_, f64>) -> PyResult<Py<PyArray2<f64>>> {
-    let data_owned = data.as_array().to_owned();
-    let corr = py.detach(|| mincorr_core::pearson::correlation_matrix(&data_owned));
+    let data_view = data.as_array();
+    let corr = py.detach(|| mincorr_core::pearson::correlation_matrix(&data_view));
     Ok(corr.into_pyarray(py).into())
 }
 
 #[pyfunction]
 fn spearman_matrix(py: Python<'_>, data: PyReadonlyArray2<'_, f64>) -> PyResult<Py<PyArray2<f64>>> {
-    let data_owned = data.as_array().to_owned();
-    let corr = py.detach(|| mincorr_core::spearman::correlation_matrix(&data_owned));
+    let data_view = data.as_array();
+    let corr = py.detach(|| mincorr_core::spearman::correlation_matrix(&data_view));
     Ok(corr.into_pyarray(py).into())
 }
 
 #[pyfunction]
 fn kendall_matrix(py: Python<'_>, data: PyReadonlyArray2<'_, f64>) -> PyResult<Py<PyArray2<f64>>> {
-    let data_owned = data.as_array().to_owned();
-    let corr = py.detach(|| mincorr_core::kendall::correlation_matrix(&data_owned));
+    let data_view = data.as_array();
+    let corr = py.detach(|| mincorr_core::kendall::correlation_matrix(&data_view));
     Ok(corr.into_pyarray(py).into())
 }
 
 #[pyfunction]
 fn bicor_matrix(py: Python<'_>, data: PyReadonlyArray2<'_, f64>) -> PyResult<Py<PyArray2<f64>>> {
-    let data_owned = data.as_array().to_owned();
-    let corr = py.detach(|| mincorr_core::bicor::correlation_matrix(&data_owned));
+    let data_view = data.as_array();
+    let corr = py.detach(|| mincorr_core::bicor::correlation_matrix(&data_view));
     Ok(corr.into_pyarray(py).into())
 }
 
@@ -125,8 +125,60 @@ fn hellcor_matrix(
     data: PyReadonlyArray2<'_, f64>,
     alpha: f64,
 ) -> PyResult<Py<PyArray2<f64>>> {
-    let data_owned = data.as_array().to_owned();
-    let corr = py.detach(|| mincorr_core::hellcor::correlation_matrix_with_alpha(&data_owned, alpha));
+    let data_view = data.as_array();
+    let corr = py.detach(|| mincorr_core::hellcor::correlation_matrix_with_alpha(&data_view, alpha));
+    Ok(corr.into_pyarray(py).into())
+}
+
+#[pyfunction]
+fn pearson_upper_triangle(
+    py: Python<'_>,
+    data: PyReadonlyArray2<'_, f64>,
+) -> PyResult<Py<PyArray1<f64>>> {
+    let data_view = data.as_array();
+    let corr = py.detach(|| mincorr_core::pearson::correlation_upper_triangle(&data_view));
+    Ok(corr.into_pyarray(py).into())
+}
+
+#[pyfunction]
+fn spearman_upper_triangle(
+    py: Python<'_>,
+    data: PyReadonlyArray2<'_, f64>,
+) -> PyResult<Py<PyArray1<f64>>> {
+    let data_view = data.as_array();
+    let corr = py.detach(|| mincorr_core::spearman::correlation_upper_triangle(&data_view));
+    Ok(corr.into_pyarray(py).into())
+}
+
+#[pyfunction]
+fn kendall_upper_triangle(
+    py: Python<'_>,
+    data: PyReadonlyArray2<'_, f64>,
+) -> PyResult<Py<PyArray1<f64>>> {
+    let data_view = data.as_array();
+    let corr = py.detach(|| mincorr_core::kendall::correlation_upper_triangle(&data_view));
+    Ok(corr.into_pyarray(py).into())
+}
+
+#[pyfunction]
+fn bicor_upper_triangle(
+    py: Python<'_>,
+    data: PyReadonlyArray2<'_, f64>,
+) -> PyResult<Py<PyArray1<f64>>> {
+    let data_view = data.as_array();
+    let corr = py.detach(|| mincorr_core::bicor::correlation_upper_triangle(&data_view));
+    Ok(corr.into_pyarray(py).into())
+}
+
+#[pyfunction]
+#[pyo3(signature = (data, alpha = 6.0))]
+fn hellcor_upper_triangle(
+    py: Python<'_>,
+    data: PyReadonlyArray2<'_, f64>,
+    alpha: f64,
+) -> PyResult<Py<PyArray1<f64>>> {
+    let data_view = data.as_array();
+    let corr = py.detach(|| mincorr_core::hellcor::correlation_upper_triangle_with_alpha(&data_view, alpha));
     Ok(corr.into_pyarray(py).into())
 }
 
@@ -142,6 +194,11 @@ fn mincorr(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(kendall_matrix, m)?)?;
     m.add_function(wrap_pyfunction!(bicor_matrix, m)?)?;
     m.add_function(wrap_pyfunction!(hellcor_matrix, m)?)?;
+    m.add_function(wrap_pyfunction!(pearson_upper_triangle, m)?)?;
+    m.add_function(wrap_pyfunction!(spearman_upper_triangle, m)?)?;
+    m.add_function(wrap_pyfunction!(kendall_upper_triangle, m)?)?;
+    m.add_function(wrap_pyfunction!(bicor_upper_triangle, m)?)?;
+    m.add_function(wrap_pyfunction!(hellcor_upper_triangle, m)?)?;
     m.add("__all__", vec![
         "hellcor_pair",
         "pearson_pair",
@@ -153,6 +210,11 @@ fn mincorr(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
         "kendall_matrix",
         "bicor_matrix",
         "hellcor_matrix",
+        "pearson_upper_triangle",
+        "spearman_upper_triangle",
+        "kendall_upper_triangle",
+        "bicor_upper_triangle",
+        "hellcor_upper_triangle",
     ])?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     Ok(())

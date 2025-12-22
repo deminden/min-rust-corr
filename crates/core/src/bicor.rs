@@ -1,6 +1,6 @@
-use ndarray::Array2;
-use ndarray::ArrayView1;
+use ndarray::{Array2, ArrayBase, ArrayView1, Data, Ix2};
 use rayon::prelude::*;
+use crate::upper::upper_triangular_len;
 
 const REF_UX: f64 = 0.5;
 
@@ -178,7 +178,10 @@ fn prepare_col_bicor(
     PreparedRow { values: res, na_flag: false }
 }
 
-pub fn correlation_matrix(data: &Array2<f64>) -> Array2<f64> {
+pub fn correlation_matrix<S>(data: &ArrayBase<S, Ix2>) -> Array2<f64>
+where
+    S: Data<Elem = f64> + Sync,
+{
     let (n_rows, n_cols) = data.dim();
     if n_rows == 0 || n_cols == 0 {
         return Array2::<f64>::zeros((n_rows, n_rows));
@@ -217,6 +220,60 @@ pub fn correlation_matrix(data: &Array2<f64>) -> Array2<f64> {
     corr
 }
 
-pub fn matrix(data: &Array2<f64>) -> Array2<f64> {
+pub fn matrix<S>(data: &ArrayBase<S, Ix2>) -> Array2<f64>
+where
+    S: Data<Elem = f64> + Sync,
+{
     correlation_matrix(data)
+}
+
+pub fn correlation_upper_triangle<S>(data: &ArrayBase<S, Ix2>) -> Vec<f64>
+where
+    S: Data<Elem = f64> + Sync,
+{
+    let (n_rows, n_cols) = data.dim();
+    if n_rows == 0 || n_cols == 0 {
+        return Vec::new();
+    }
+
+    let max_p_outliers = 1.0;
+    let fallback = FallbackMode::Individual;
+    let cosine = false;
+
+    let prepared: Vec<PreparedRow> = (0..n_rows)
+        .into_par_iter()
+        .map(|i| prepare_col_bicor(data.row(i), max_p_outliers, fallback, cosine))
+        .collect();
+
+    let row_results: Vec<Vec<f64>> = (0..n_rows)
+        .into_par_iter()
+        .map(|i| {
+            let mut row = vec![f64::NAN; n_rows - i];
+            row[0] = 1.0;
+            for j in i + 1..n_rows {
+                if prepared[i].na_flag || prepared[j].na_flag {
+                    row[j - i] = f64::NAN;
+                    continue;
+                }
+                let mut dot = 0.0;
+                for k in 0..n_cols {
+                    dot += prepared[i].values[k] * prepared[j].values[k];
+                }
+                let mut corr = dot;
+                if corr > 1.0 {
+                    corr = 1.0;
+                } else if corr < -1.0 {
+                    corr = -1.0;
+                }
+                row[j - i] = corr;
+            }
+            row
+        })
+        .collect();
+
+    let mut packed = Vec::with_capacity(upper_triangular_len(n_rows));
+    for row in row_results {
+        packed.extend_from_slice(&row);
+    }
+    packed
 }

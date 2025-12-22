@@ -1,7 +1,7 @@
 // Compute pairwise Hellinger correlations (HellCor) for matrix rows.
 // References in comments are to the Hellinger correlation paper https://arxiv.org/abs/1810.10276
 
-use ndarray::{Array2, ArrayView1};
+use ndarray::{Array2, ArrayBase, ArrayView1, Data, Ix2};
 use rayon::prelude::*;
 use std::fs::File;
 use std::io::{self, Write};
@@ -418,7 +418,10 @@ pub fn hellcor_pair(x: &[f64], y: &[f64], alpha: f64) -> f64 {
     )
 }
 
-fn correlation_matrix_impl(data: &Array2<f64>, alpha: f64) -> Array2<f64> {
+fn correlation_matrix_impl<S>(data: &ArrayBase<S, Ix2>, alpha: f64) -> Array2<f64>
+where
+    S: Data<Elem = f64> + Sync,
+{
     let (n_rows, n_cols) = data.dim();
     if n_rows == 0 || n_cols == 0 {
         return Array2::<f64>::zeros((n_rows, n_rows));
@@ -480,18 +483,107 @@ fn correlation_matrix_impl(data: &Array2<f64>, alpha: f64) -> Array2<f64> {
     corr
 }
 
-pub fn correlation_matrix(data: &Array2<f64>) -> Array2<f64> {
+pub fn correlation_matrix<S>(data: &ArrayBase<S, Ix2>) -> Array2<f64>
+where
+    S: Data<Elem = f64> + Sync,
+{
     correlation_matrix_impl(data, DEFAULT_ALPHA)
 }
 
-pub fn correlation_matrix_with_alpha(data: &Array2<f64>, alpha: f64) -> Array2<f64> {
+pub fn correlation_matrix_with_alpha<S>(data: &ArrayBase<S, Ix2>, alpha: f64) -> Array2<f64>
+where
+    S: Data<Elem = f64> + Sync,
+{
     correlation_matrix_impl(data, alpha)
 }
 
-pub fn matrix(data: &Array2<f64>) -> Array2<f64> {
+pub fn matrix<S>(data: &ArrayBase<S, Ix2>) -> Array2<f64>
+where
+    S: Data<Elem = f64> + Sync,
+{
     correlation_matrix(data)
 }
 
-pub fn matrix_with_alpha(data: &Array2<f64>, alpha: f64) -> Array2<f64> {
+pub fn matrix_with_alpha<S>(data: &ArrayBase<S, Ix2>, alpha: f64) -> Array2<f64>
+where
+    S: Data<Elem = f64> + Sync,
+{
     correlation_matrix_with_alpha(data, alpha)
+}
+
+fn correlation_upper_triangle_impl<S>(data: &ArrayBase<S, Ix2>, alpha: f64) -> Vec<f64>
+where
+    S: Data<Elem = f64> + Sync,
+{
+    let (n_rows, n_cols) = data.dim();
+    if n_rows == 0 || n_cols == 0 {
+        return Vec::new();
+    }
+
+    let kmax = DEFAULT_KMAX;
+    let lmax = DEFAULT_LMAX;
+    let max_k = kmax.max(lmax);
+
+    let rows: Vec<HellcorRow> = (0..n_rows)
+        .into_par_iter()
+        .map(|i| prepare_row(data.row(i), max_k, alpha))
+        .collect();
+
+    let debug_pair = std::env::var("HELLCOR_DEBUG_PAIR")
+        .ok()
+        .and_then(|value| {
+            let parts: Vec<&str> = value.split(',').collect();
+            if parts.len() != 2 {
+                return None;
+            }
+            let i = parts[0].trim().parse::<usize>().ok()?;
+            let j = parts[1].trim().parse::<usize>().ok()?;
+            Some((i, j))
+        });
+    let debug_written = AtomicBool::new(false);
+
+    let row_results: Vec<Vec<f64>> = (0..n_rows)
+        .into_par_iter()
+        .map(|i| {
+            let mut row = vec![f64::NAN; n_rows - i];
+            row[0] = 1.0;
+            for j in i + 1..n_rows {
+                row[j - i] = hellcor_pair_impl(
+                    i,
+                    j,
+                    &rows[i],
+                    &rows[j],
+                    kmax,
+                    lmax,
+                    alpha,
+                    debug_pair,
+                    &debug_written,
+                );
+            }
+            row
+        })
+        .collect();
+
+    let mut packed = Vec::with_capacity(crate::upper::upper_triangular_len(n_rows));
+    for row in row_results {
+        packed.extend_from_slice(&row);
+    }
+    packed
+}
+
+pub fn correlation_upper_triangle<S>(data: &ArrayBase<S, Ix2>) -> Vec<f64>
+where
+    S: Data<Elem = f64> + Sync,
+{
+    correlation_upper_triangle_impl(data, DEFAULT_ALPHA)
+}
+
+pub fn correlation_upper_triangle_with_alpha<S>(
+    data: &ArrayBase<S, Ix2>,
+    alpha: f64,
+) -> Vec<f64>
+where
+    S: Data<Elem = f64> + Sync,
+{
+    correlation_upper_triangle_impl(data, alpha)
 }
