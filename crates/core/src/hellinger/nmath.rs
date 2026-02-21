@@ -83,11 +83,19 @@ pub(crate) fn r_d_lexp(x: f64, log_p: bool) -> f64 {
 }
 
 pub(crate) fn r_dt_0(lower_tail: bool, log_p: bool) -> f64 {
-    if lower_tail { r_d__0(log_p) } else { r_d__1(log_p) }
+    if lower_tail {
+        r_d__0(log_p)
+    } else {
+        r_d__1(log_p)
+    }
 }
 
 pub(crate) fn r_dt_1(lower_tail: bool, log_p: bool) -> f64 {
-    if lower_tail { r_d__1(log_p) } else { r_d__0(log_p) }
+    if lower_tail {
+        r_d__1(log_p)
+    } else {
+        r_d__0(log_p)
+    }
 }
 
 pub(crate) fn r_dt_qiv(p: f64, lower_tail: bool, log_p: bool) -> f64 {
@@ -107,11 +115,19 @@ pub(crate) fn r_dt_civ(p: f64, lower_tail: bool, log_p: bool) -> f64 {
 }
 
 pub(crate) fn r_dt_log(p: f64, lower_tail: bool, log_p: bool) -> f64 {
-    if lower_tail { r_d_log(p, log_p) } else { r_d_lexp(p, log_p) }
+    if lower_tail {
+        r_d_log(p, log_p)
+    } else {
+        r_d_lexp(p, log_p)
+    }
 }
 
 pub(crate) fn r_dt_clog(p: f64, lower_tail: bool, log_p: bool) -> f64 {
-    if lower_tail { r_d_lexp(p, log_p) } else { r_d_log(p, log_p) }
+    if lower_tail {
+        r_d_lexp(p, log_p)
+    } else {
+        r_d_log(p, log_p)
+    }
 }
 
 pub(crate) fn r_pow_di(mut x: f64, mut n: i32) -> f64 {
@@ -374,21 +390,120 @@ pub(crate) fn stirlerr(n: f64) -> f64 {
             return (S0 - (S1 - (S2 - (S3 - (S4 - (S5 - S6 / nn) / nn) / nn) / nn) / nn) / nn) / n;
         }
         if n > 12.3 {
-            return (S0 - (S1 - (S2 - (S3 - (S4 - (S5 - (S6 - S7 / nn) / nn) / nn) / nn) / nn) / nn) / nn) / n;
+            return (S0
+                - (S1 - (S2 - (S3 - (S4 - (S5 - (S6 - S7 / nn) / nn) / nn) / nn) / nn) / nn) / nn)
+                / n;
         }
         if n > 8.9 {
-            return (S0 - (S1 - (S2 - (S3 - (S4 - (S5 - (S6 - (S7 - S8 / nn) / nn) / nn) / nn) / nn) / nn) / nn) / nn) / n;
+            return (S0
+                - (S1
+                    - (S2 - (S3 - (S4 - (S5 - (S6 - (S7 - S8 / nn) / nn) / nn) / nn) / nn) / nn)
+                        / nn)
+                    / nn)
+                / n;
         }
         if n > 7.3 {
-            return (S0 - (S1 - (S2 - (S3 - (S4 - (S5 - (S6 - (S7 - (S8 - (S9 - S10 / nn) / nn) / nn) / nn) / nn) / nn) / nn) / nn) / nn) / nn) / n;
+            return (S0
+                - (S1
+                    - (S2
+                        - (S3
+                            - (S4
+                                - (S5
+                                    - (S6 - (S7 - (S8 - (S9 - S10 / nn) / nn) / nn) / nn)
+                                        / nn)
+                                    / nn)
+                                / nn)
+                            / nn)
+                        / nn)
+                    / nn)
+                / n;
         }
         if n > 6.6 {
-            return (S0 - (S1 - (S2 - (S3 - (S4 - (S5 - (S6 - (S7 - (S8 - (S9 - (S10 - (S11 - S12 / nn) / nn) / nn) / nn) / nn) / nn) / nn) / nn) / nn) / nn) / nn) / nn) / n;
+            return (S0
+                - (S1
+                    - (S2
+                        - (S3
+                            - (S4
+                                - (S5
+                                    - (S6
+                                        - (S7
+                                            - (S8
+                                                - (S9
+                                                    - (S10 - (S11 - S12 / nn) / nn) / nn)
+                                                    / nn)
+                                                / nn)
+                                            / nn)
+                                        / nn)
+                                    / nn)
+                                / nn)
+                            / nn)
+                        / nn)
+                    / nn)
+                / n;
         }
         if n > 6.1 {
-            return (S0 - (S1 - (S2 - (S3 - (S4 - (S5 - (S6 - (S7 - (S8 - (S9 - (S10 - (S11 - (S12 - (S13 - S14 / nn) / nn) / nn) / nn) / nn) / nn) / nn) / nn) / nn) / nn) / nn) / nn) / nn) / nn) / n;
+            return (S0
+                - (S1
+                    - (S2
+                        - (S3
+                            - (S4
+                                - (S5
+                                    - (S6
+                                        - (S7
+                                            - (S8
+                                                - (S9
+                                                    - (S10
+                                                        - (S11
+                                                            - (S12
+                                                                - (S13 - S14 / nn)
+                                                                    / nn)
+                                                                / nn)
+                                                            / nn)
+                                                        / nn)
+                                                    / nn)
+                                                / nn)
+                                            / nn)
+                                        / nn)
+                                    / nn)
+                                / nn)
+                            / nn)
+                        / nn)
+                    / nn)
+                / n;
         }
-        return (S0 - (S1 - (S2 - (S3 - (S4 - (S5 - (S6 - (S7 - (S8 - (S9 - (S10 - (S11 - (S12 - (S13 - (S14 - (S15 - S16 / nn) / nn) / nn) / nn) / nn) / nn) / nn) / nn) / nn) / nn) / nn) / nn) / nn) / nn) / nn) / nn) / n;
+        return (S0
+            - (S1
+                - (S2
+                    - (S3
+                        - (S4
+                            - (S5
+                                - (S6
+                                    - (S7
+                                        - (S8
+                                            - (S9
+                                                - (S10
+                                                    - (S11
+                                                        - (S12
+                                                            - (S13
+                                                                - (S14
+                                                                    - (S15
+                                                                        - S16 / nn)
+                                                                        / nn)
+                                                                    / nn)
+                                                                / nn)
+                                                            / nn)
+                                                        / nn)
+                                                    / nn)
+                                                / nn)
+                                            / nn)
+                                        / nn)
+                                    / nn)
+                                / nn)
+                            / nn)
+                        / nn)
+                    / nn)
+                / nn)
+            / n;
     }
 
     let nn = n * n;
@@ -633,9 +748,14 @@ pub(crate) fn gammafn(x: f64) -> f64 {
         }
         v
     } else {
-        ((y - 0.5) * y.ln() - y + M_LN_SQRT_2PI
-            + if (2.0 * y) == (2.0 * y).round() { stirlerr(y) } else { lgammacor(y) })
-            .exp()
+        ((y - 0.5) * y.ln() - y
+            + M_LN_SQRT_2PI
+            + if (2.0 * y) == (2.0 * y).round() {
+                stirlerr(y)
+            } else {
+                lgammacor(y)
+            })
+        .exp()
     };
 
     if x > 0.0 {
@@ -729,14 +849,15 @@ pub(crate) fn lbeta(a: f64, b: f64) -> f64 {
     }
     if p >= 10.0 {
         let corr = lgammacor(p) + lgammacor(q) - lgammacor(p + q);
-        return -0.5 * q.ln() + M_LN_SQRT_2PI + corr
+        return -0.5 * q.ln()
+            + M_LN_SQRT_2PI
+            + corr
             + (p - 0.5) * (p / (p + q)).ln()
             + q * (-p / (p + q)).ln_1p();
     }
     if q >= 10.0 {
         let corr = lgammacor(q) - lgammacor(p + q);
-        return lgammafn(p) + corr + p - p * (p + q).ln()
-            + (q - 0.5) * (-p / (p + q)).ln_1p();
+        return lgammafn(p) + corr + p - p * (p + q).ln() + (q - 0.5) * (-p / (p + q)).ln_1p();
     }
     if p < 1e-306 {
         return lgammafn(p) + (lgammafn(q) - lgammafn(p + q));

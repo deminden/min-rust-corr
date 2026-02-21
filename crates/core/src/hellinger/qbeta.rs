@@ -1,6 +1,6 @@
 use crate::hellinger::nmath::{
-    fmax2, fmin2, lbeta, ml_warn_return_nan, ml_warning, r_d_half, r_dt_0, r_dt_1, r_dt_civ,
-    r_dt_clog, r_dt_log, r_dt_qiv, r_log1_exp, r_pow_di, r_finite, M_LN2, ML_NAN, ML_NEGINF,
+    M_LN2, ML_NAN, ML_NEGINF, fmax2, fmin2, lbeta, ml_warn_return_nan, ml_warning, r_d_half,
+    r_dt_0, r_dt_1, r_dt_civ, r_dt_clog, r_dt_log, r_dt_qiv, r_finite, r_log1_exp, r_pow_di,
 };
 use crate::hellinger::pbeta::pbeta_raw;
 
@@ -234,10 +234,7 @@ fn qbeta_raw(
     let logbeta = lbeta(p, q);
     let mut swap_tail = p_ > 0.5;
     if debug_case {
-        eprintln!(
-            "DBG qbeta_raw init: p_={:.17e} swap_tail={}",
-            p_, swap_tail
-        );
+        eprintln!("DBG qbeta_raw init: p_={:.17e} swap_tail={}", p_, swap_tail);
     }
 
     let mut n_maybe_swaps = 0;
@@ -271,7 +268,12 @@ fn qbeta_raw(
         let t = 0.2;
         let u0_maybe = (M_LN2 * f64::MIN_EXP as f64) < u0 && u0 < -0.01;
         if u0_maybe
-            && u0 < (t * log_eps_c - (pp * (1.0 - qq) * (2.0 - qq) / (2.0 * (pp + 2.0))).abs().ln()) / 2.0
+            && u0
+                < (t * log_eps_c
+                    - (pp * (1.0 - qq) * (2.0 - qq) / (2.0 * (pp + 2.0)))
+                        .abs()
+                        .ln())
+                    / 2.0
         {
             rp *= u0.exp();
             if rp > -1.0 {
@@ -284,7 +286,11 @@ fn qbeta_raw(
             use_log_x = true;
             let mut nonfinite_w = false;
             let mut last_y = f64::NAN;
-            let target_nonzero = if log_p { alpha > ML_NEGINF } else { alpha > 0.0 };
+            let target_nonzero = if log_p {
+                alpha > ML_NEGINF
+            } else {
+                alpha > 0.0
+            };
             let tiny_target = if log_p { alpha < -50.0 } else { alpha < 1e-50 };
             let reject_upper_underflow = !lower_tail && !swap_tail && target_nonzero && tiny_target;
             if debug_case {
@@ -365,7 +371,11 @@ fn qbeta_raw(
             let w = y * (h + r).sqrt() / h - (t - s) * (r + 5.0 / 6.0 - 2.0 / (3.0 * h));
             if w > 300.0 {
                 let t = w + w + qq.ln() - pp.ln();
-                u = if t <= 18.0 { -(t.exp()).ln_1p() } else { -t - (-t).exp() };
+                u = if t <= 18.0 {
+                    -(t.exp()).ln_1p()
+                } else {
+                    -t - (-t).exp()
+                };
                 xinbta = u.exp();
             } else {
                 let e = (w + w).exp();
@@ -378,7 +388,11 @@ fn qbeta_raw(
             t = r2 * r_pow_di(1.0 + t * (-t + y), 3);
             let s = 4.0 * pp + r2 - 2.0;
             if t == 0.0 || (t < 0.0 && s >= t) {
-                let l1ma = if swap_tail { r_dt_log(alpha, lower_tail, log_p) } else { r_dt_clog(alpha, lower_tail, log_p) };
+                let l1ma = if swap_tail {
+                    r_dt_log(alpha, lower_tail, log_p)
+                } else {
+                    r_dt_clog(alpha, lower_tail, log_p)
+                };
                 let xx = (l1ma + qq.ln() + logbeta) / qq;
                 if xx <= 0.0 {
                     xinbta = -xx.exp_m1();
@@ -428,7 +442,11 @@ fn qbeta_raw(
         let bad_u = !r_finite(u);
         let bad_init = bad_u || xinbta > P_HI;
         tx = xinbta;
-        let target_nonzero = if log_p { alpha > ML_NEGINF } else { alpha > 0.0 };
+        let target_nonzero = if log_p {
+            alpha > ML_NEGINF
+        } else {
+            alpha > 0.0
+        };
         let tiny_target = if log_p { alpha < -50.0 } else { alpha < 1e-50 };
         let reject_upper_underflow = !lower_tail && !swap_tail && target_nonzero && tiny_target;
 
@@ -472,7 +490,13 @@ fn qbeta_raw(
                 u = M_LN2 * f64::MIN_EXP as f64;
                 xinbta = f64::MIN_POSITIVE;
             } else {
-                xinbta = if xinbta > 1.1 { 0.5 } else if xinbta < P_LO { u.exp() } else { P_HI };
+                xinbta = if xinbta > 1.1 {
+                    0.5
+                } else if xinbta < P_LO {
+                    u.exp()
+                } else {
+                    P_HI
+                };
                 if bad_u {
                     u = xinbta.ln();
                 }
@@ -647,7 +671,11 @@ fn newton(
                 return (u, xinbta);
             }
             let use_log_adj = overflow_log_w;
-            let w = if use_log_adj { 0.0 } else { dy_sign * log_w.exp() };
+            let w = if use_log_adj {
+                0.0
+            } else {
+                dy_sign * log_w.exp()
+            };
             let w_sign = if use_log_adj {
                 dy_sign
             } else if w == 0.0 {
@@ -675,7 +703,11 @@ fn newton(
                 for _ in 0..1000 {
                     let log_adj = log_w + log_g;
                     if log_adj < log_prev {
-                        adj = if log_adj < log_min { 0.0 } else { dy_sign * log_adj.exp() };
+                        adj = if log_adj < log_min {
+                            0.0
+                        } else {
+                            dy_sign * log_adj.exp()
+                        };
                         u_next = u - adj;
                         if u_next <= 0.0 {
                             if prev <= acu || dy_sign == 0.0 || log_w <= log_acu {
@@ -857,10 +889,7 @@ fn return_qb(
                     (0.0, true)
                 } else {
                     let w = err
-                        * (y
-                            + logbeta
-                            + (1.0 - pp) * xinbta.ln()
-                            + (1.0 - qq) * (-xinbta).ln_1p())
+                        * (y + logbeta + (1.0 - pp) * xinbta.ln() + (1.0 - qq) * (-xinbta).ln_1p())
                             .exp();
                     (w, r_finite(w))
                 }

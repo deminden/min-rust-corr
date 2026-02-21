@@ -1,5 +1,5 @@
 use crate::hellinger::nmath::{
-    ml_warn_return_nan, r_dt_0, r_dt_1, r_finite, r_log1_exp, ML_NEGINF,
+    ML_NEGINF, ml_warn_return_nan, r_dt_0, r_dt_1, r_finite, r_log1_exp,
 };
 use crate::hellinger::toms708::bratio;
 

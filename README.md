@@ -90,6 +90,7 @@ Supports `.gz` compression.
 ## Output
 
 Creates `<input_basename>_<method>_correlations.tar.gz` containing correlation matrix in TSV format. Results are saved in the current directory or `outputs/` folder when using the GTEx processing script. 
+If a subset mode is used, the subset tag is inserted in the output name, e.g. `<input_basename>_subset500_seed42_<method>_correlations.tar.gz`.
 
 ## R references for correlations
 
@@ -149,6 +150,67 @@ GTEx bladder tissue (N = 77, 2950 genes)
 
 # Compare results with R implementations  
 Rscript crates/core/tests/investigate_diffs.R data/your_file.tsv.gz
+```
+
+## Subset and Cross Modes (CLI + Python)
+
+This project supports three output layouts:
+
+- subset-only (`A x A`): compute within one selected subset.
+- subset-vs-subset (`A x B`): compute between two selected subsets.
+- subset-vs-all (`A x all`): compute one selected subset against all rows.
+
+### CLI
+
+```bash
+# A x A (legacy subset mode, aliases map to subset A)
+mincorr data.tsv.gz pearson --subset-size 500 --subset-seed 42
+mincorr data.tsv.gz pearson --subset-file genes.txt
+mincorr data.tsv.gz pearson --subset-rows ENSG000001,ENSG000002
+
+# A x B
+mincorr data.tsv.gz pearson --subset-a-file genes_a.txt --subset-b-file genes_b.txt
+
+# A x all
+mincorr data.tsv.gz pearson --subset-size 500 --subset-seed 42 --subset-vs-all
+```
+
+Rules:
+
+- `--subset-size N` supports optional `--subset-seed S` (default `42`).
+- `--subset-file PATH` reads newline-separated row IDs.
+- `--subset-rows ID1,ID2,...` accepts comma-separated row IDs.
+- On each side (`A` or `B`), use exactly one selector: `size`, `file`, or `rows`.
+- `--subset-vs-all` requires subset A and cannot be combined with `--subset-b-*`.
+
+### Python
+
+Use matrix slicing to define row subsets, then call cross-matrix APIs:
+
+```python
+import mincorr
+
+# data_all: shape (n_genes, n_samples)
+# data_a: subset A rows, shape (n_a, n_samples)
+# data_b: subset B rows, shape (n_b, n_samples)
+
+# A x B
+r_ab = mincorr.pearson_cross_matrix(data_a, data_b)
+r_ab_h = mincorr.hellcor_cross_matrix(data_a, data_b, alpha=6.0)
+
+# A x all
+r_a_all = mincorr.spearman_cross_matrix(data_a, data_all)
+```
+
+Python cross functions available for all methods:
+
+- `pearson_cross_matrix`
+- `spearman_cross_matrix`
+- `kendall_cross_matrix`
+- `bicor_cross_matrix`
+- `hellcor_cross_matrix`
+
+Inputs must have the same number of columns (samples) in both matrices.
 
 ## Contributing
 

@@ -30,6 +30,18 @@ fn owned_pair(
     Ok((x_slice.to_vec(), y_slice.to_vec()))
 }
 
+fn ensure_same_ncols(
+    a: &ndarray::ArrayView2<'_, f64>,
+    b: &ndarray::ArrayView2<'_, f64>,
+) -> PyResult<()> {
+    if a.ncols() != b.ncols() {
+        return Err(PyValueError::new_err(
+            "data_a and data_b must have the same number of columns (samples)",
+        ));
+    }
+    Ok(())
+}
+
 #[pyfunction]
 #[pyo3(signature = (x, y, alpha = 6.0))]
 fn hellcor_pair(
@@ -126,7 +138,85 @@ fn hellcor_matrix(
     alpha: f64,
 ) -> PyResult<Py<PyArray2<f64>>> {
     let data_view = data.as_array();
-    let corr = py.detach(|| mincorr_core::hellcor::correlation_matrix_with_alpha(&data_view, alpha));
+    let corr =
+        py.detach(|| mincorr_core::hellcor::correlation_matrix_with_alpha(&data_view, alpha));
+    Ok(corr.into_pyarray(py).into())
+}
+
+#[pyfunction]
+fn pearson_cross_matrix(
+    py: Python<'_>,
+    data_a: PyReadonlyArray2<'_, f64>,
+    data_b: PyReadonlyArray2<'_, f64>,
+) -> PyResult<Py<PyArray2<f64>>> {
+    let data_a_view = data_a.as_array();
+    let data_b_view = data_b.as_array();
+    ensure_same_ncols(&data_a_view, &data_b_view)?;
+    let corr =
+        py.detach(|| mincorr_core::pearson::correlation_cross_matrix(&data_a_view, &data_b_view));
+    Ok(corr.into_pyarray(py).into())
+}
+
+#[pyfunction]
+fn spearman_cross_matrix(
+    py: Python<'_>,
+    data_a: PyReadonlyArray2<'_, f64>,
+    data_b: PyReadonlyArray2<'_, f64>,
+) -> PyResult<Py<PyArray2<f64>>> {
+    let data_a_view = data_a.as_array();
+    let data_b_view = data_b.as_array();
+    ensure_same_ncols(&data_a_view, &data_b_view)?;
+    let corr =
+        py.detach(|| mincorr_core::spearman::correlation_cross_matrix(&data_a_view, &data_b_view));
+    Ok(corr.into_pyarray(py).into())
+}
+
+#[pyfunction]
+fn kendall_cross_matrix(
+    py: Python<'_>,
+    data_a: PyReadonlyArray2<'_, f64>,
+    data_b: PyReadonlyArray2<'_, f64>,
+) -> PyResult<Py<PyArray2<f64>>> {
+    let data_a_view = data_a.as_array();
+    let data_b_view = data_b.as_array();
+    ensure_same_ncols(&data_a_view, &data_b_view)?;
+    let corr =
+        py.detach(|| mincorr_core::kendall::correlation_cross_matrix(&data_a_view, &data_b_view));
+    Ok(corr.into_pyarray(py).into())
+}
+
+#[pyfunction]
+fn bicor_cross_matrix(
+    py: Python<'_>,
+    data_a: PyReadonlyArray2<'_, f64>,
+    data_b: PyReadonlyArray2<'_, f64>,
+) -> PyResult<Py<PyArray2<f64>>> {
+    let data_a_view = data_a.as_array();
+    let data_b_view = data_b.as_array();
+    ensure_same_ncols(&data_a_view, &data_b_view)?;
+    let corr =
+        py.detach(|| mincorr_core::bicor::correlation_cross_matrix(&data_a_view, &data_b_view));
+    Ok(corr.into_pyarray(py).into())
+}
+
+#[pyfunction]
+#[pyo3(signature = (data_a, data_b, alpha = 6.0))]
+fn hellcor_cross_matrix(
+    py: Python<'_>,
+    data_a: PyReadonlyArray2<'_, f64>,
+    data_b: PyReadonlyArray2<'_, f64>,
+    alpha: f64,
+) -> PyResult<Py<PyArray2<f64>>> {
+    let data_a_view = data_a.as_array();
+    let data_b_view = data_b.as_array();
+    ensure_same_ncols(&data_a_view, &data_b_view)?;
+    let corr = py.detach(|| {
+        mincorr_core::hellcor::correlation_cross_matrix_with_alpha(
+            &data_a_view,
+            &data_b_view,
+            alpha,
+        )
+    });
     Ok(corr.into_pyarray(py).into())
 }
 
@@ -178,7 +268,8 @@ fn hellcor_upper_triangle(
     alpha: f64,
 ) -> PyResult<Py<PyArray1<f64>>> {
     let data_view = data.as_array();
-    let corr = py.detach(|| mincorr_core::hellcor::correlation_upper_triangle_with_alpha(&data_view, alpha));
+    let corr = py
+        .detach(|| mincorr_core::hellcor::correlation_upper_triangle_with_alpha(&data_view, alpha));
     Ok(corr.into_pyarray(py).into())
 }
 
@@ -194,28 +285,41 @@ fn mincorr(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(kendall_matrix, m)?)?;
     m.add_function(wrap_pyfunction!(bicor_matrix, m)?)?;
     m.add_function(wrap_pyfunction!(hellcor_matrix, m)?)?;
+    m.add_function(wrap_pyfunction!(pearson_cross_matrix, m)?)?;
+    m.add_function(wrap_pyfunction!(spearman_cross_matrix, m)?)?;
+    m.add_function(wrap_pyfunction!(kendall_cross_matrix, m)?)?;
+    m.add_function(wrap_pyfunction!(bicor_cross_matrix, m)?)?;
+    m.add_function(wrap_pyfunction!(hellcor_cross_matrix, m)?)?;
     m.add_function(wrap_pyfunction!(pearson_upper_triangle, m)?)?;
     m.add_function(wrap_pyfunction!(spearman_upper_triangle, m)?)?;
     m.add_function(wrap_pyfunction!(kendall_upper_triangle, m)?)?;
     m.add_function(wrap_pyfunction!(bicor_upper_triangle, m)?)?;
     m.add_function(wrap_pyfunction!(hellcor_upper_triangle, m)?)?;
-    m.add("__all__", vec![
-        "hellcor_pair",
-        "pearson_pair",
-        "spearman_pair",
-        "kendall_pair",
-        "bicor_pair",
-        "pearson_matrix",
-        "spearman_matrix",
-        "kendall_matrix",
-        "bicor_matrix",
-        "hellcor_matrix",
-        "pearson_upper_triangle",
-        "spearman_upper_triangle",
-        "kendall_upper_triangle",
-        "bicor_upper_triangle",
-        "hellcor_upper_triangle",
-    ])?;
+    m.add(
+        "__all__",
+        vec![
+            "hellcor_pair",
+            "pearson_pair",
+            "spearman_pair",
+            "kendall_pair",
+            "bicor_pair",
+            "pearson_matrix",
+            "spearman_matrix",
+            "kendall_matrix",
+            "bicor_matrix",
+            "hellcor_matrix",
+            "pearson_cross_matrix",
+            "spearman_cross_matrix",
+            "kendall_cross_matrix",
+            "bicor_cross_matrix",
+            "hellcor_cross_matrix",
+            "pearson_upper_triangle",
+            "spearman_upper_triangle",
+            "kendall_upper_triangle",
+            "bicor_upper_triangle",
+            "hellcor_upper_triangle",
+        ],
+    )?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     Ok(())
 }

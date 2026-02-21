@@ -48,7 +48,9 @@ fn run_r(cases: &[Case]) -> Result<Vec<f64>, String> {
         if trimmed.is_empty() {
             continue;
         }
-        let val: f64 = trimmed.parse().map_err(|e| format!("parse R output: {e}"))?;
+        let val: f64 = trimmed
+            .parse()
+            .map_err(|e| format!("parse R output: {e}"))?;
         results.push(val);
     }
 
@@ -99,7 +101,16 @@ fn approx_equal(a: f64, b: f64) -> bool {
 
 fn deterministic_cases() -> Vec<Case> {
     let mut cases = Vec::new();
-    let ps: [f64; 8] = [0.0, 1.0, 0.5, 1e-300, 1e-50, 1e-10, 1.0 - 1e-12, 1.0 - 1e-30];
+    let ps: [f64; 8] = [
+        0.0,
+        1.0,
+        0.5,
+        1e-300,
+        1e-50,
+        1e-10,
+        1.0 - 1e-12,
+        1.0 - 1e-30,
+    ];
     let ab: [f64; 6] = [0.5, 1.0, 2.0, 10.0, 1e-8, 1e8];
 
     for &a in &ab {
@@ -168,8 +179,13 @@ fn qbeta_against_r() {
         Err(err) => panic!("Rscript required for tests: {err}"),
     };
 
-    for (idx, ((p, a, b, lower_tail, log_p), r_val)) in cases.iter().zip(r_vals.iter()).enumerate() {
-        let extreme_p = if *log_p { *p <= 1e-300_f64.ln() } else { *p <= 1e-300 };
+    for (idx, ((p, a, b, lower_tail, log_p), r_val)) in cases.iter().zip(r_vals.iter()).enumerate()
+    {
+        let extreme_p = if *log_p {
+            *p <= 1e-300_f64.ln()
+        } else {
+            *p <= 1e-300
+        };
         let huge_ab = a.max(*b) >= 1e6 || a.min(*b) <= 1e-6;
         if extreme_p && huge_ab {
             continue;

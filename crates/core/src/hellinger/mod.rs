@@ -1,9 +1,9 @@
+mod dbeta;
 mod nmath;
-mod toms708;
 mod pbeta;
 mod qbeta;
-mod dbeta;
+mod toms708;
 
-pub use qbeta::qbeta;
 pub use dbeta::dbeta;
 pub use pbeta::pbeta;
+pub use qbeta::qbeta;

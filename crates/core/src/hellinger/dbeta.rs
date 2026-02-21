@@ -1,4 +1,4 @@
-use crate::hellinger::nmath::{lbeta, ml_warn_return_nan, r_finite, ML_NEGINF};
+use crate::hellinger::nmath::{ML_NEGINF, lbeta, ml_warn_return_nan, r_finite};
 
 pub fn dbeta(x: f64, a: f64, b: f64, log_p: bool) -> f64 {
     if x.is_nan() || a.is_nan() || b.is_nan() {

@@ -1,6 +1,6 @@
+use crate::upper::upper_triangular_len;
 use ndarray::{Array2, ArrayBase, ArrayView1, Data, Ix2};
 use rayon::prelude::*;
-use crate::upper::upper_triangular_len;
 
 const REF_UX: f64 = 0.5;
 
@@ -55,7 +55,10 @@ fn prepare_col_cor(row: ArrayView1<f64>, cosine: bool) -> PreparedRow {
     }
 
     if count == 0 {
-        return PreparedRow { values: res, na_flag: true };
+        return PreparedRow {
+            values: res,
+            na_flag: true,
+        };
     }
 
     if cosine {
@@ -68,7 +71,10 @@ fn prepare_col_cor(row: ArrayView1<f64>, cosine: bool) -> PreparedRow {
     let denom = var.sqrt();
 
     if denom == 0.0 || !denom.is_finite() {
-        return PreparedRow { values: res, na_flag: true };
+        return PreparedRow {
+            values: res,
+            na_flag: true,
+        };
     }
 
     for (idx, &v) in row.iter().enumerate() {
@@ -77,7 +83,10 @@ fn prepare_col_cor(row: ArrayView1<f64>, cosine: bool) -> PreparedRow {
         }
     }
 
-    PreparedRow { values: res, na_flag: false }
+    PreparedRow {
+        values: res,
+        na_flag: false,
+    }
 }
 
 fn prepare_col_bicor(
@@ -92,12 +101,18 @@ fn prepare_col_bicor(
 
     let mut finite_vals: Vec<f64> = row.iter().cloned().filter(|v| v.is_finite()).collect();
     if finite_vals.is_empty() {
-        return PreparedRow { values: res, na_flag: true };
+        return PreparedRow {
+            values: res,
+            na_flag: true,
+        };
     }
 
     let med = median(&mut finite_vals);
     if !med.is_finite() {
-        return PreparedRow { values: res, na_flag: true };
+        return PreparedRow {
+            values: res,
+            na_flag: true,
+        };
     }
 
     let med_x = if cosine { 0.0 } else { med };
@@ -111,7 +126,11 @@ fn prepare_col_bicor(
         }
     }
 
-    let mut mad_vals: Vec<f64> = deviations.iter().cloned().filter(|v| v.is_finite()).collect();
+    let mut mad_vals: Vec<f64> = deviations
+        .iter()
+        .cloned()
+        .filter(|v| v.is_finite())
+        .collect();
     let mad = median(&mut mad_vals);
 
     if mad == 0.0 || !mad.is_finite() {
@@ -129,9 +148,17 @@ fn prepare_col_bicor(
         }
     }
 
-    let mut aux_vals: Vec<f64> = deviations.iter().cloned().filter(|v| v.is_finite()).collect();
+    let mut aux_vals: Vec<f64> = deviations
+        .iter()
+        .cloned()
+        .filter(|v| v.is_finite())
+        .collect();
     let mut low_q = quantile_in_place(&mut aux_vals, max_p_outliers);
-    let mut aux_vals: Vec<f64> = deviations.iter().cloned().filter(|v| v.is_finite()).collect();
+    let mut aux_vals: Vec<f64> = deviations
+        .iter()
+        .cloned()
+        .filter(|v| v.is_finite())
+        .collect();
     let mut hi_q = quantile_in_place(&mut aux_vals, 1.0 - max_p_outliers);
 
     if low_q > -REF_UX {
@@ -168,14 +195,20 @@ fn prepare_col_bicor(
 
     let denom = sum_sq.sqrt();
     if denom == 0.0 || !denom.is_finite() {
-        return PreparedRow { values: vec![0.0; n], na_flag: true };
+        return PreparedRow {
+            values: vec![0.0; n],
+            na_flag: true,
+        };
     }
 
     for v in res.iter_mut() {
         *v /= denom;
     }
 
-    PreparedRow { values: res, na_flag: false }
+    PreparedRow {
+        values: res,
+        na_flag: false,
+    }
 }
 
 pub fn correlation_matrix<S>(data: &ArrayBase<S, Ix2>) -> Array2<f64>
@@ -200,8 +233,8 @@ where
     for row in &prepared {
         flat.extend_from_slice(&row.values);
     }
-    let prep_matrix = Array2::from_shape_vec((n_rows, n_cols), flat)
-        .expect("prepared matrix shape mismatch");
+    let prep_matrix =
+        Array2::from_shape_vec((n_rows, n_cols), flat).expect("prepared matrix shape mismatch");
 
     let mut corr = prep_matrix.dot(&prep_matrix.t());
 
@@ -225,6 +258,68 @@ where
     S: Data<Elem = f64> + Sync,
 {
     correlation_matrix(data)
+}
+
+pub fn correlation_cross_matrix<S1, S2>(
+    lhs: &ArrayBase<S1, Ix2>,
+    rhs: &ArrayBase<S2, Ix2>,
+) -> Array2<f64>
+where
+    S1: Data<Elem = f64> + Sync,
+    S2: Data<Elem = f64> + Sync,
+{
+    let (lhs_rows, lhs_cols) = lhs.dim();
+    let (rhs_rows, rhs_cols) = rhs.dim();
+    assert_eq!(
+        lhs_cols, rhs_cols,
+        "Biweight midcorrelation cross-matrix requires equal sample count in both matrices"
+    );
+
+    if lhs_rows == 0 || rhs_rows == 0 || lhs_cols == 0 {
+        return Array2::<f64>::zeros((lhs_rows, rhs_rows));
+    }
+
+    let max_p_outliers = 1.0;
+    let fallback = FallbackMode::Individual;
+    let cosine = false;
+
+    let prepared_lhs: Vec<PreparedRow> = (0..lhs_rows)
+        .into_par_iter()
+        .map(|i| prepare_col_bicor(lhs.row(i), max_p_outliers, fallback, cosine))
+        .collect();
+    let prepared_rhs: Vec<PreparedRow> = (0..rhs_rows)
+        .into_par_iter()
+        .map(|i| prepare_col_bicor(rhs.row(i), max_p_outliers, fallback, cosine))
+        .collect();
+
+    let mut flat_lhs = Vec::with_capacity(lhs_rows * lhs_cols);
+    for row in &prepared_lhs {
+        flat_lhs.extend_from_slice(&row.values);
+    }
+    let prep_lhs = Array2::from_shape_vec((lhs_rows, lhs_cols), flat_lhs)
+        .expect("prepared lhs shape mismatch");
+
+    let mut flat_rhs = Vec::with_capacity(rhs_rows * rhs_cols);
+    for row in &prepared_rhs {
+        flat_rhs.extend_from_slice(&row.values);
+    }
+    let prep_rhs = Array2::from_shape_vec((rhs_rows, rhs_cols), flat_rhs)
+        .expect("prepared rhs shape mismatch");
+
+    let mut corr = prep_lhs.dot(&prep_rhs.t());
+    for i in 0..lhs_rows {
+        for j in 0..rhs_rows {
+            if prepared_lhs[i].na_flag || prepared_rhs[j].na_flag {
+                corr[[i, j]] = f64::NAN;
+            } else if corr[[i, j]] > 1.0 {
+                corr[[i, j]] = 1.0;
+            } else if corr[[i, j]] < -1.0 {
+                corr[[i, j]] = -1.0;
+            }
+        }
+    }
+
+    corr
 }
 
 pub fn correlation_upper_triangle<S>(data: &ArrayBase<S, Ix2>) -> Vec<f64>

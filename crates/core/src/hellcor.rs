@@ -25,7 +25,12 @@ struct HellcorRow {
 
 fn ranks_avg_ties(values: &[f64]) -> Vec<f64> {
     let n = values.len();
-    let mut indexed: Vec<(f64, usize)> = values.iter().cloned().enumerate().map(|(i, v)| (v, i)).collect();
+    let mut indexed: Vec<(f64, usize)> = values
+        .iter()
+        .cloned()
+        .enumerate()
+        .map(|(i, v)| (v, i))
+        .collect();
     indexed.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
 
     let mut ranks = vec![0.0; n];
@@ -54,48 +59,115 @@ fn legendre_poly(x: f64, k: usize) -> f64 {
         3 => -2.80624304008046 * x + 4.67707173346743 * x.powi(3),
         4 => 0.795495128834866 - 7.95495128834866 * x.powi(2) + 9.28077650307344 * x.powi(4),
         5 => 4.39726477483446 * x - 20.5205689492275 * x.powi(3) + 18.4685120543048 * x.powi(5),
-        6 => -0.796721798998873 + 16.7311577789763 * x.powi(2) - 50.193473336929 * x.powi(4)
-            + 36.8085471137479 * x.powi(6),
-        7 => -5.99071547271275 * x + 53.9164392544148 * x.powi(3) - 118.616166359713 * x.powi(5)
-            + 73.4290553655363 * x.powi(7),
-        8 => 0.797200454373381 - 28.6992163574417 * x.powi(2) + 157.845689965929 * x.powi(4)
-            - 273.599195940944 * x.powi(6) + 146.570997825506 * x.powi(8),
-        9 => 7.58511879271573 * x - 111.248408959831 * x.powi(3) + 433.86879494334 * x.powi(5)
-            - 619.812564204771 * x.powi(7) + 292.689266430031 * x.powi(9),
-        10 => -0.797434890624405 + 43.8589189843422 * x.powi(2) - 380.110631197633 * x.powi(4)
-            + 1140.3318935929 * x.powi(6) - 1384.68872793423 * x.powi(8) + 584.646351794454 * x.powi(10),
-        11 => -9.17998960606603 * x + 198.899774798097 * x.powi(3) - 1193.39864878858 * x.powi(5)
-            + 2898.25386134371 * x.powi(7) - 3059.26796475169 * x.powi(9) + 1168.0841319961 * x.powi(11),
-        12 => 0.797566730732873 - 62.2102049971641 * x.powi(2) + 777.627562464552 * x.powi(4)
-            - 3525.2449498393 * x.powi(6) + 7176.39150503 * x.powi(8) - 6697.96540469467 * x.powi(10)
-            + 2334.13945921178 * x.powi(12),
-        13 => 10.7751235804364 * x - 323.253707413091 * x.powi(3) + 2747.65651301127 * x.powi(5)
-            - 9943.89976137412 * x.powi(7) + 17401.8245824047 * x.powi(9) - 14554.2532871021 * x.powi(11)
-            + 4664.82477150709 * x.powi(13),
-        14 => -0.797648110941312 + 83.7530516488378 * x.powi(2) - 1423.80187803024 * x.powi(4)
-            + 9017.41189419154 * x.powi(6) - 27052.2356825746 * x.powi(8) + 41480.0947132811 * x.powi(10)
-            - 31424.3141767281 * x.powi(12) + 9323.69761287537 * x.powi(14),
-        15 => -12.37042008527 * x + 490.693330049044 * x.powi(3) - 5593.9039625591 * x.powi(5)
-            + 27969.5198127955 * x.powi(7) - 71477.6617438108 * x.powi(9) + 97469.5387415601 * x.powi(11)
-            - 67478.9114364647 * x.powi(13) + 18637.0326824522 * x.powi(15),
-        16 => 0.79770183004505 - 108.487448886127 * x.powi(2) + 2404.80511697581 * x.powi(4)
-            - 20200.3629825968 * x.powi(6) + 82965.7765356655 * x.powi(8) - 184368.392301479 * x.powi(10)
-            + 226270.299642724 * x.powi(12) - 144216.234937121 * x.powi(14) + 37255.8606920895 * x.powi(16),
-        17 => 13.9658239139855 * x - 707.601744975264 * x.powi(3) + 10401.7456511364 * x.powi(5)
-            - 68354.3285646105 * x.powi(7) + 237341.41862712 * x.powi(9) - 466052.240213253 * x.powi(11)
-            + 519827.498699398 * x.powi(13) - 306945.761136787 * x.powi(15) + 74479.4861581911 * x.powi(17),
-        18 => -0.797739132849908 + 136.413391717334 * x.powi(2) - 3819.57496808536 * x.powi(4)
-            + 40996.7713241162 * x.powi(6) - 219625.560664908 * x.powi(8) + 658876.681994724 * x.powi(10)
-            - 1158025.68350588 * x.powi(12) + 1183476.79742909 * x.powi(14) - 650912.238585997 * x.powi(16)
-            + 148901.492486993 * x.powi(18),
-        19 => -15.5613022863318 * x + 980.362044038905 * x.powi(3) - 18038.6616103158 * x.powi(5)
-            + 150322.180085965 * x.powi(7) - 676449.810386844 * x.powi(9) + 1783367.68192895 * x.powi(11)
-            - 2835097.34050244 * x.powi(13) + 2673091.77818801 * x.powi(15) - 1375856.06230265 * x.powi(17)
-            + 297699.849738001 * x.powi(19),
-        20 => 0.797766083041056 - 167.530877438622 * x.powi(2) + 5779.81527163245 * x.powi(4)
-            - 77064.203621766 * x.powi(6) + 520183.37444692 * x.powi(8) - 2011375.71452809 * x.powi(10)
-            + 4723685.39017961 * x.powi(12) - 6851939.2472935 * x.powi(14) + 5995446.84138182 * x.powi(16)
-            - 2899758.60302127 * x.powi(18) + 595213.607988577 * x.powi(20),
+        6 => {
+            -0.796721798998873 + 16.7311577789763 * x.powi(2) - 50.193473336929 * x.powi(4)
+                + 36.8085471137479 * x.powi(6)
+        }
+        7 => {
+            -5.99071547271275 * x + 53.9164392544148 * x.powi(3) - 118.616166359713 * x.powi(5)
+                + 73.4290553655363 * x.powi(7)
+        }
+        8 => {
+            0.797200454373381 - 28.6992163574417 * x.powi(2) + 157.845689965929 * x.powi(4)
+                - 273.599195940944 * x.powi(6)
+                + 146.570997825506 * x.powi(8)
+        }
+        9 => {
+            7.58511879271573 * x - 111.248408959831 * x.powi(3) + 433.86879494334 * x.powi(5)
+                - 619.812564204771 * x.powi(7)
+                + 292.689266430031 * x.powi(9)
+        }
+        10 => {
+            -0.797434890624405 + 43.8589189843422 * x.powi(2) - 380.110631197633 * x.powi(4)
+                + 1140.3318935929 * x.powi(6)
+                - 1384.68872793423 * x.powi(8)
+                + 584.646351794454 * x.powi(10)
+        }
+        11 => {
+            -9.17998960606603 * x + 198.899774798097 * x.powi(3) - 1193.39864878858 * x.powi(5)
+                + 2898.25386134371 * x.powi(7)
+                - 3059.26796475169 * x.powi(9)
+                + 1168.0841319961 * x.powi(11)
+        }
+        12 => {
+            0.797566730732873 - 62.2102049971641 * x.powi(2) + 777.627562464552 * x.powi(4)
+                - 3525.2449498393 * x.powi(6)
+                + 7176.39150503 * x.powi(8)
+                - 6697.96540469467 * x.powi(10)
+                + 2334.13945921178 * x.powi(12)
+        }
+        13 => {
+            10.7751235804364 * x - 323.253707413091 * x.powi(3) + 2747.65651301127 * x.powi(5)
+                - 9943.89976137412 * x.powi(7)
+                + 17401.8245824047 * x.powi(9)
+                - 14554.2532871021 * x.powi(11)
+                + 4664.82477150709 * x.powi(13)
+        }
+        14 => {
+            -0.797648110941312 + 83.7530516488378 * x.powi(2) - 1423.80187803024 * x.powi(4)
+                + 9017.41189419154 * x.powi(6)
+                - 27052.2356825746 * x.powi(8)
+                + 41480.0947132811 * x.powi(10)
+                - 31424.3141767281 * x.powi(12)
+                + 9323.69761287537 * x.powi(14)
+        }
+        15 => {
+            -12.37042008527 * x + 490.693330049044 * x.powi(3) - 5593.9039625591 * x.powi(5)
+                + 27969.5198127955 * x.powi(7)
+                - 71477.6617438108 * x.powi(9)
+                + 97469.5387415601 * x.powi(11)
+                - 67478.9114364647 * x.powi(13)
+                + 18637.0326824522 * x.powi(15)
+        }
+        16 => {
+            0.79770183004505 - 108.487448886127 * x.powi(2) + 2404.80511697581 * x.powi(4)
+                - 20200.3629825968 * x.powi(6)
+                + 82965.7765356655 * x.powi(8)
+                - 184368.392301479 * x.powi(10)
+                + 226270.299642724 * x.powi(12)
+                - 144216.234937121 * x.powi(14)
+                + 37255.8606920895 * x.powi(16)
+        }
+        17 => {
+            13.9658239139855 * x - 707.601744975264 * x.powi(3) + 10401.7456511364 * x.powi(5)
+                - 68354.3285646105 * x.powi(7)
+                + 237341.41862712 * x.powi(9)
+                - 466052.240213253 * x.powi(11)
+                + 519827.498699398 * x.powi(13)
+                - 306945.761136787 * x.powi(15)
+                + 74479.4861581911 * x.powi(17)
+        }
+        18 => {
+            -0.797739132849908 + 136.413391717334 * x.powi(2) - 3819.57496808536 * x.powi(4)
+                + 40996.7713241162 * x.powi(6)
+                - 219625.560664908 * x.powi(8)
+                + 658876.681994724 * x.powi(10)
+                - 1158025.68350588 * x.powi(12)
+                + 1183476.79742909 * x.powi(14)
+                - 650912.238585997 * x.powi(16)
+                + 148901.492486993 * x.powi(18)
+        }
+        19 => {
+            -15.5613022863318 * x + 980.362044038905 * x.powi(3) - 18038.6616103158 * x.powi(5)
+                + 150322.180085965 * x.powi(7)
+                - 676449.810386844 * x.powi(9)
+                + 1783367.68192895 * x.powi(11)
+                - 2835097.34050244 * x.powi(13)
+                + 2673091.77818801 * x.powi(15)
+                - 1375856.06230265 * x.powi(17)
+                + 297699.849738001 * x.powi(19)
+        }
+        20 => {
+            0.797766083041056 - 167.530877438622 * x.powi(2) + 5779.81527163245 * x.powi(4)
+                - 77064.203621766 * x.powi(6)
+                + 520183.37444692 * x.powi(8)
+                - 2011375.71452809 * x.powi(10)
+                + 4723685.39017961 * x.powi(12)
+                - 6851939.2472935 * x.powi(14)
+                + 5995446.84138182 * x.powi(16)
+                - 2899758.60302127 * x.powi(18)
+                + 595213.607988577 * x.powi(20)
+        }
         _ => {
             let kf = k as f64;
             ((2.0 * kf + 1.0).sqrt()
@@ -155,7 +227,14 @@ fn prepare_row(row: ArrayView1<f64>, kmax: usize, alpha: f64) -> HellcorRow {
         }
     }
 
-    HellcorRow { u, t, w, leg, n, valid: true }
+    HellcorRow {
+        u,
+        t,
+        w,
+        leg,
+        n,
+        valid: true,
+    }
 }
 
 fn leg_value(row: &HellcorRow, k: usize, i: usize) -> f64 {
@@ -418,6 +497,18 @@ pub fn hellcor_pair(x: &[f64], y: &[f64], alpha: f64) -> f64 {
     )
 }
 
+fn parse_debug_pair() -> Option<(usize, usize)> {
+    std::env::var("HELLCOR_DEBUG_PAIR").ok().and_then(|value| {
+        let parts: Vec<&str> = value.split(',').collect();
+        if parts.len() != 2 {
+            return None;
+        }
+        let i = parts[0].trim().parse::<usize>().ok()?;
+        let j = parts[1].trim().parse::<usize>().ok()?;
+        Some((i, j))
+    })
+}
+
 fn correlation_matrix_impl<S>(data: &ArrayBase<S, Ix2>, alpha: f64) -> Array2<f64>
 where
     S: Data<Elem = f64> + Sync,
@@ -436,17 +527,7 @@ where
         .map(|i| prepare_row(data.row(i), max_k, alpha))
         .collect();
 
-    let debug_pair = std::env::var("HELLCOR_DEBUG_PAIR")
-        .ok()
-        .and_then(|value| {
-            let parts: Vec<&str> = value.split(',').collect();
-            if parts.len() != 2 {
-                return None;
-            }
-            let i = parts[0].trim().parse::<usize>().ok()?;
-            let j = parts[1].trim().parse::<usize>().ok()?;
-            Some((i, j))
-        });
+    let debug_pair = parse_debug_pair();
     let debug_written = AtomicBool::new(false);
 
     let row_results: Vec<Vec<f64>> = (0..n_rows)
@@ -511,6 +592,95 @@ where
     correlation_matrix_with_alpha(data, alpha)
 }
 
+fn correlation_cross_matrix_impl<S1, S2>(
+    lhs: &ArrayBase<S1, Ix2>,
+    rhs: &ArrayBase<S2, Ix2>,
+    alpha: f64,
+) -> Array2<f64>
+where
+    S1: Data<Elem = f64> + Sync,
+    S2: Data<Elem = f64> + Sync,
+{
+    let (lhs_rows, lhs_cols) = lhs.dim();
+    let (rhs_rows, rhs_cols) = rhs.dim();
+    assert_eq!(
+        lhs_cols, rhs_cols,
+        "Hellcor cross-correlation requires equal sample count in both matrices"
+    );
+
+    if lhs_rows == 0 || rhs_rows == 0 || lhs_cols == 0 {
+        return Array2::<f64>::zeros((lhs_rows, rhs_rows));
+    }
+
+    let kmax = DEFAULT_KMAX;
+    let lmax = DEFAULT_LMAX;
+    let max_k = kmax.max(lmax);
+
+    let lhs_prepared: Vec<HellcorRow> = (0..lhs_rows)
+        .into_par_iter()
+        .map(|i| prepare_row(lhs.row(i), max_k, alpha))
+        .collect();
+    let rhs_prepared: Vec<HellcorRow> = (0..rhs_rows)
+        .into_par_iter()
+        .map(|i| prepare_row(rhs.row(i), max_k, alpha))
+        .collect();
+
+    let debug_pair = parse_debug_pair();
+    let debug_written = AtomicBool::new(false);
+
+    let row_results: Vec<Vec<f64>> = (0..lhs_rows)
+        .into_par_iter()
+        .map(|i| {
+            let mut row = vec![f64::NAN; rhs_rows];
+            for j in 0..rhs_rows {
+                row[j] = hellcor_pair_impl(
+                    i,
+                    j,
+                    &lhs_prepared[i],
+                    &rhs_prepared[j],
+                    kmax,
+                    lmax,
+                    alpha,
+                    debug_pair,
+                    &debug_written,
+                );
+            }
+            row
+        })
+        .collect();
+
+    let mut corr = Array2::<f64>::from_elem((lhs_rows, rhs_rows), f64::NAN);
+    for i in 0..lhs_rows {
+        for j in 0..rhs_rows {
+            corr[[i, j]] = row_results[i][j];
+        }
+    }
+    corr
+}
+
+pub fn correlation_cross_matrix<S1, S2>(
+    lhs: &ArrayBase<S1, Ix2>,
+    rhs: &ArrayBase<S2, Ix2>,
+) -> Array2<f64>
+where
+    S1: Data<Elem = f64> + Sync,
+    S2: Data<Elem = f64> + Sync,
+{
+    correlation_cross_matrix_impl(lhs, rhs, DEFAULT_ALPHA)
+}
+
+pub fn correlation_cross_matrix_with_alpha<S1, S2>(
+    lhs: &ArrayBase<S1, Ix2>,
+    rhs: &ArrayBase<S2, Ix2>,
+    alpha: f64,
+) -> Array2<f64>
+where
+    S1: Data<Elem = f64> + Sync,
+    S2: Data<Elem = f64> + Sync,
+{
+    correlation_cross_matrix_impl(lhs, rhs, alpha)
+}
+
 fn correlation_upper_triangle_impl<S>(data: &ArrayBase<S, Ix2>, alpha: f64) -> Vec<f64>
 where
     S: Data<Elem = f64> + Sync,
@@ -529,17 +699,7 @@ where
         .map(|i| prepare_row(data.row(i), max_k, alpha))
         .collect();
 
-    let debug_pair = std::env::var("HELLCOR_DEBUG_PAIR")
-        .ok()
-        .and_then(|value| {
-            let parts: Vec<&str> = value.split(',').collect();
-            if parts.len() != 2 {
-                return None;
-            }
-            let i = parts[0].trim().parse::<usize>().ok()?;
-            let j = parts[1].trim().parse::<usize>().ok()?;
-            Some((i, j))
-        });
+    let debug_pair = parse_debug_pair();
     let debug_written = AtomicBool::new(false);
 
     let row_results: Vec<Vec<f64>> = (0..n_rows)
@@ -578,10 +738,7 @@ where
     correlation_upper_triangle_impl(data, DEFAULT_ALPHA)
 }
 
-pub fn correlation_upper_triangle_with_alpha<S>(
-    data: &ArrayBase<S, Ix2>,
-    alpha: f64,
-) -> Vec<f64>
+pub fn correlation_upper_triangle_with_alpha<S>(data: &ArrayBase<S, Ix2>, alpha: f64) -> Vec<f64>
 where
     S: Data<Elem = f64> + Sync,
 {
