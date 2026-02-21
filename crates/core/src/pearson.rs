@@ -1,3 +1,4 @@
+use crate::pvalues::{corr_pvalue_from_t_dist, students_t_for_corr};
 use crate::upper::upper_triangular_len;
 use ndarray::{Array2, ArrayBase, Data, Ix2};
 use rayon::prelude::*;
@@ -160,4 +161,51 @@ where
         packed.extend_from_slice(&row);
     }
     packed
+}
+
+fn corr_to_pvalues(corr: &Array2<f64>, n_samples: usize, set_diag_zero: bool) -> Array2<f64> {
+    let (n_rows, n_cols) = corr.dim();
+    let mut pvals = Array2::<f64>::from_elem((n_rows, n_cols), f64::NAN);
+
+    if set_diag_zero {
+        for i in 0..n_rows.min(n_cols) {
+            pvals[[i, i]] = 0.0;
+        }
+    }
+
+    let Some(t_dist) = students_t_for_corr(n_samples) else {
+        return pvals;
+    };
+
+    for i in 0..n_rows {
+        for j in 0..n_cols {
+            if !(set_diag_zero && i == j) {
+                pvals[[i, j]] = corr_pvalue_from_t_dist(corr[[i, j]], n_samples, &t_dist);
+            }
+        }
+    }
+
+    pvals
+}
+
+pub fn correlation_matrix_with_pvalues<S>(data: &ArrayBase<S, Ix2>) -> (Array2<f64>, Array2<f64>)
+where
+    S: Data<Elem = f64> + Sync,
+{
+    let corr = correlation_matrix(data);
+    let pvals = corr_to_pvalues(&corr, data.ncols(), true);
+    (corr, pvals)
+}
+
+pub fn correlation_cross_matrix_with_pvalues<S1, S2>(
+    lhs: &ArrayBase<S1, Ix2>,
+    rhs: &ArrayBase<S2, Ix2>,
+) -> (Array2<f64>, Array2<f64>)
+where
+    S1: Data<Elem = f64> + Sync,
+    S2: Data<Elem = f64> + Sync,
+{
+    let corr = correlation_cross_matrix(lhs, rhs);
+    let pvals = corr_to_pvalues(&corr, lhs.ncols(), false);
+    (corr, pvals)
 }

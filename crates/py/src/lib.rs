@@ -221,6 +221,153 @@ fn hellcor_cross_matrix(
 }
 
 #[pyfunction]
+fn pearson_matrix_with_pvalues(
+    py: Python<'_>,
+    data: PyReadonlyArray2<'_, f64>,
+) -> PyResult<(Py<PyArray2<f64>>, Py<PyArray2<f64>>)> {
+    let data_view = data.as_array();
+    let (corr, pvals) =
+        py.detach(|| mincorr_core::pearson::correlation_matrix_with_pvalues(&data_view));
+    Ok((corr.into_pyarray(py).into(), pvals.into_pyarray(py).into()))
+}
+
+#[pyfunction]
+fn spearman_matrix_with_pvalues(
+    py: Python<'_>,
+    data: PyReadonlyArray2<'_, f64>,
+) -> PyResult<(Py<PyArray2<f64>>, Py<PyArray2<f64>>)> {
+    let data_view = data.as_array();
+    let (corr, pvals) =
+        py.detach(|| mincorr_core::spearman::correlation_matrix_with_pvalues(&data_view));
+    Ok((corr.into_pyarray(py).into(), pvals.into_pyarray(py).into()))
+}
+
+#[pyfunction]
+fn kendall_matrix_with_pvalues(
+    py: Python<'_>,
+    data: PyReadonlyArray2<'_, f64>,
+) -> PyResult<(Py<PyArray2<f64>>, Py<PyArray2<f64>>)> {
+    let data_view = data.as_array();
+    let (corr, pvals) =
+        py.detach(|| mincorr_core::kendall::correlation_matrix_with_pvalues(&data_view));
+    Ok((corr.into_pyarray(py).into(), pvals.into_pyarray(py).into()))
+}
+
+#[pyfunction]
+fn bicor_matrix_with_pvalues(
+    py: Python<'_>,
+    data: PyReadonlyArray2<'_, f64>,
+) -> PyResult<(Py<PyArray2<f64>>, Py<PyArray2<f64>>)> {
+    let data_view = data.as_array();
+    let (corr, pvals) =
+        py.detach(|| mincorr_core::bicor::correlation_matrix_with_pvalues(&data_view));
+    Ok((corr.into_pyarray(py).into(), pvals.into_pyarray(py).into()))
+}
+
+#[pyfunction]
+#[pyo3(signature = (data, alpha = 6.0, mc_samples = 10000, seed = 42))]
+fn hellcor_matrix_with_pvalues(
+    py: Python<'_>,
+    data: PyReadonlyArray2<'_, f64>,
+    alpha: f64,
+    mc_samples: usize,
+    seed: u64,
+) -> PyResult<(Py<PyArray2<f64>>, Py<PyArray2<f64>>)> {
+    let data_view = data.as_array();
+    let (corr, pvals) = py.detach(|| {
+        mincorr_core::hellcor::correlation_matrix_with_pvalues_with_alpha(
+            &data_view, alpha, mc_samples, seed,
+        )
+    });
+    Ok((corr.into_pyarray(py).into(), pvals.into_pyarray(py).into()))
+}
+
+#[pyfunction]
+fn pearson_cross_matrix_with_pvalues(
+    py: Python<'_>,
+    data_a: PyReadonlyArray2<'_, f64>,
+    data_b: PyReadonlyArray2<'_, f64>,
+) -> PyResult<(Py<PyArray2<f64>>, Py<PyArray2<f64>>)> {
+    let data_a_view = data_a.as_array();
+    let data_b_view = data_b.as_array();
+    ensure_same_ncols(&data_a_view, &data_b_view)?;
+    let (corr, pvals) = py.detach(|| {
+        mincorr_core::pearson::correlation_cross_matrix_with_pvalues(&data_a_view, &data_b_view)
+    });
+    Ok((corr.into_pyarray(py).into(), pvals.into_pyarray(py).into()))
+}
+
+#[pyfunction]
+fn spearman_cross_matrix_with_pvalues(
+    py: Python<'_>,
+    data_a: PyReadonlyArray2<'_, f64>,
+    data_b: PyReadonlyArray2<'_, f64>,
+) -> PyResult<(Py<PyArray2<f64>>, Py<PyArray2<f64>>)> {
+    let data_a_view = data_a.as_array();
+    let data_b_view = data_b.as_array();
+    ensure_same_ncols(&data_a_view, &data_b_view)?;
+    let (corr, pvals) = py.detach(|| {
+        mincorr_core::spearman::correlation_cross_matrix_with_pvalues(&data_a_view, &data_b_view)
+    });
+    Ok((corr.into_pyarray(py).into(), pvals.into_pyarray(py).into()))
+}
+
+#[pyfunction]
+fn kendall_cross_matrix_with_pvalues(
+    py: Python<'_>,
+    data_a: PyReadonlyArray2<'_, f64>,
+    data_b: PyReadonlyArray2<'_, f64>,
+) -> PyResult<(Py<PyArray2<f64>>, Py<PyArray2<f64>>)> {
+    let data_a_view = data_a.as_array();
+    let data_b_view = data_b.as_array();
+    ensure_same_ncols(&data_a_view, &data_b_view)?;
+    let (corr, pvals) = py.detach(|| {
+        mincorr_core::kendall::correlation_cross_matrix_with_pvalues(&data_a_view, &data_b_view)
+    });
+    Ok((corr.into_pyarray(py).into(), pvals.into_pyarray(py).into()))
+}
+
+#[pyfunction]
+fn bicor_cross_matrix_with_pvalues(
+    py: Python<'_>,
+    data_a: PyReadonlyArray2<'_, f64>,
+    data_b: PyReadonlyArray2<'_, f64>,
+) -> PyResult<(Py<PyArray2<f64>>, Py<PyArray2<f64>>)> {
+    let data_a_view = data_a.as_array();
+    let data_b_view = data_b.as_array();
+    ensure_same_ncols(&data_a_view, &data_b_view)?;
+    let (corr, pvals) = py.detach(|| {
+        mincorr_core::bicor::correlation_cross_matrix_with_pvalues(&data_a_view, &data_b_view)
+    });
+    Ok((corr.into_pyarray(py).into(), pvals.into_pyarray(py).into()))
+}
+
+#[pyfunction]
+#[pyo3(signature = (data_a, data_b, alpha = 6.0, mc_samples = 10000, seed = 42))]
+fn hellcor_cross_matrix_with_pvalues(
+    py: Python<'_>,
+    data_a: PyReadonlyArray2<'_, f64>,
+    data_b: PyReadonlyArray2<'_, f64>,
+    alpha: f64,
+    mc_samples: usize,
+    seed: u64,
+) -> PyResult<(Py<PyArray2<f64>>, Py<PyArray2<f64>>)> {
+    let data_a_view = data_a.as_array();
+    let data_b_view = data_b.as_array();
+    ensure_same_ncols(&data_a_view, &data_b_view)?;
+    let (corr, pvals) = py.detach(|| {
+        mincorr_core::hellcor::correlation_cross_matrix_with_pvalues_with_alpha(
+            &data_a_view,
+            &data_b_view,
+            alpha,
+            mc_samples,
+            seed,
+        )
+    });
+    Ok((corr.into_pyarray(py).into(), pvals.into_pyarray(py).into()))
+}
+
+#[pyfunction]
 fn pearson_upper_triangle(
     py: Python<'_>,
     data: PyReadonlyArray2<'_, f64>,
@@ -285,11 +432,21 @@ fn mincorr(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(kendall_matrix, m)?)?;
     m.add_function(wrap_pyfunction!(bicor_matrix, m)?)?;
     m.add_function(wrap_pyfunction!(hellcor_matrix, m)?)?;
+    m.add_function(wrap_pyfunction!(pearson_matrix_with_pvalues, m)?)?;
+    m.add_function(wrap_pyfunction!(spearman_matrix_with_pvalues, m)?)?;
+    m.add_function(wrap_pyfunction!(kendall_matrix_with_pvalues, m)?)?;
+    m.add_function(wrap_pyfunction!(bicor_matrix_with_pvalues, m)?)?;
+    m.add_function(wrap_pyfunction!(hellcor_matrix_with_pvalues, m)?)?;
     m.add_function(wrap_pyfunction!(pearson_cross_matrix, m)?)?;
     m.add_function(wrap_pyfunction!(spearman_cross_matrix, m)?)?;
     m.add_function(wrap_pyfunction!(kendall_cross_matrix, m)?)?;
     m.add_function(wrap_pyfunction!(bicor_cross_matrix, m)?)?;
     m.add_function(wrap_pyfunction!(hellcor_cross_matrix, m)?)?;
+    m.add_function(wrap_pyfunction!(pearson_cross_matrix_with_pvalues, m)?)?;
+    m.add_function(wrap_pyfunction!(spearman_cross_matrix_with_pvalues, m)?)?;
+    m.add_function(wrap_pyfunction!(kendall_cross_matrix_with_pvalues, m)?)?;
+    m.add_function(wrap_pyfunction!(bicor_cross_matrix_with_pvalues, m)?)?;
+    m.add_function(wrap_pyfunction!(hellcor_cross_matrix_with_pvalues, m)?)?;
     m.add_function(wrap_pyfunction!(pearson_upper_triangle, m)?)?;
     m.add_function(wrap_pyfunction!(spearman_upper_triangle, m)?)?;
     m.add_function(wrap_pyfunction!(kendall_upper_triangle, m)?)?;
@@ -308,11 +465,21 @@ fn mincorr(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
             "kendall_matrix",
             "bicor_matrix",
             "hellcor_matrix",
+            "pearson_matrix_with_pvalues",
+            "spearman_matrix_with_pvalues",
+            "kendall_matrix_with_pvalues",
+            "bicor_matrix_with_pvalues",
+            "hellcor_matrix_with_pvalues",
             "pearson_cross_matrix",
             "spearman_cross_matrix",
             "kendall_cross_matrix",
             "bicor_cross_matrix",
             "hellcor_cross_matrix",
+            "pearson_cross_matrix_with_pvalues",
+            "spearman_cross_matrix_with_pvalues",
+            "kendall_cross_matrix_with_pvalues",
+            "bicor_cross_matrix_with_pvalues",
+            "hellcor_cross_matrix_with_pvalues",
             "pearson_upper_triangle",
             "spearman_upper_triangle",
             "kendall_upper_triangle",

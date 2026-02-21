@@ -21,26 +21,37 @@ use strum_macros::{Display, EnumString};
 use tar::{Archive, Builder, Header};
 
 use mincorr::bicor::{
-    correlation_cross_matrix as bicor_cross_matrix, correlation_matrix as bicor_correlation_matrix,
+    correlation_cross_matrix as bicor_cross_matrix,
+    correlation_cross_matrix_with_pvalues as bicor_cross_matrix_with_pvalues,
+    correlation_matrix as bicor_correlation_matrix,
+    correlation_matrix_with_pvalues as bicor_correlation_matrix_with_pvalues,
 };
 use mincorr::hellcor::{
     correlation_cross_matrix as hellcor_cross_matrix,
+    correlation_cross_matrix_with_pvalues_with_alpha as hellcor_cross_matrix_with_pvalues,
     correlation_matrix as hellcor_correlation_matrix,
+    correlation_matrix_with_pvalues_with_alpha as hellcor_correlation_matrix_with_pvalues,
 };
 use mincorr::kendall::{
     correlation_cross_matrix as kendall_cross_matrix,
+    correlation_cross_matrix_with_pvalues as kendall_cross_matrix_with_pvalues,
     correlation_matrix as kendall_correlation_matrix,
+    correlation_matrix_with_pvalues as kendall_correlation_matrix_with_pvalues,
 };
 use mincorr::pearson::{
     correlation_cross_matrix as pearson_cross_matrix,
+    correlation_cross_matrix_with_pvalues as pearson_cross_matrix_with_pvalues,
     correlation_matrix as pearson_correlation_matrix,
+    correlation_matrix_with_pvalues as pearson_correlation_matrix_with_pvalues,
 };
 use mincorr::spearman::{
     correlation_cross_matrix as spearman_cross_matrix,
+    correlation_cross_matrix_with_pvalues as spearman_cross_matrix_with_pvalues,
     correlation_matrix as spearman_correlation_matrix,
+    correlation_matrix_with_pvalues as spearman_correlation_matrix_with_pvalues,
 };
 
-#[derive(EnumString, Display)]
+#[derive(EnumString, Display, Clone, Copy, PartialEq, Eq)]
 #[strum(ascii_case_insensitive)]
 enum CorrelationType {
     #[strum(serialize = "Pearson")]
@@ -53,6 +64,17 @@ enum CorrelationType {
     Bicor,
     #[strum(serialize = "Hellcor", serialize = "Hellinger", to_string = "Hellcor")]
     Hellcor,
+}
+
+#[derive(EnumString, Display, Clone, Copy, PartialEq, Eq)]
+#[strum(ascii_case_insensitive)]
+enum PvalueMode {
+    #[strum(serialize = "Auto")]
+    Auto,
+    #[strum(serialize = "Analytic")]
+    Analytic,
+    #[strum(serialize = "Mc", serialize = "MonteCarlo", to_string = "Mc")]
+    Mc,
 }
 
 #[derive(Default)]
@@ -80,6 +102,26 @@ fn build_data_matrix(row_ids: &[String], row_data: &HashMap<String, Array1<f64>>
         }
     }
     matrix
+}
+
+fn matrix_to_tsv_bytes(
+    row_ids: &[String],
+    col_ids: &[String],
+    matrix: &Array2<f64>,
+) -> Result<Vec<u8>, Box<dyn Error>> {
+    let mut buf = Vec::<u8>::new();
+    {
+        let mut wtr = WriterBuilder::new().delimiter(b'\t').from_writer(&mut buf);
+        wtr.write_record(std::iter::once("").chain(col_ids.iter().map(String::as_str)))?;
+        for (i, row_id) in row_ids.iter().enumerate() {
+            let row_vals: Vec<String> = matrix.row(i).iter().map(|&r| r.to_string()).collect();
+            wtr.write_record(
+                std::iter::once(row_id.as_str()).chain(row_vals.iter().map(String::as_str)),
+            )?;
+        }
+        wtr.flush()?;
+    }
+    Ok(buf)
 }
 
 // rank_data is defined in src/rank.rs for shared use.
@@ -138,6 +180,10 @@ fn parse_args() -> Result<
         Option<usize>,
         bool,
         bool,
+        PvalueMode,
+        usize,
+        u64,
+        bool,
         SubsetConfig,
         SubsetConfig,
     ),
@@ -145,13 +191,17 @@ fn parse_args() -> Result<
 > {
     let args: Vec<String> = env::args().collect();
     if args.len() < 3 {
-        return Err("Usage: program <input_file> <correlation_type> [num_threads] [--time] [--subset-size N --subset-seed S] [--subset-file PATH] [--subset-rows ID1,ID2,...] [--subset-a-* ... --subset-b-* ...] [--subset-vs-all]\nCorrelation types: pearson, spearman, kendall, bicor, hellcor\nnum_threads: number of threads to use (default: all available)\n--time: enable detailed timing output".into());
+        return Err("Usage: program <input_file> <correlation_type> [num_threads] [--time] [--with-pvalues --pvalue-mode auto|analytic|mc --mc-samples B --mc-seed S] [--subset-size N --subset-seed S] [--subset-file PATH] [--subset-rows ID1,ID2,...] [--subset-a-* ... --subset-b-* ...] [--subset-vs-all]\nCorrelation types: pearson, spearman, kendall, bicor, hellcor\nnum_threads: number of threads to use (default: all available)\n--time: enable detailed timing output".into());
     }
 
     let correlation_type: CorrelationType = args[2].parse()?;
 
     let mut num_threads = None;
     let mut time_tracking = false;
+    let mut with_pvalues = false;
+    let mut pvalue_mode = PvalueMode::Auto;
+    let mut mc_samples = 10_000usize;
+    let mut mc_seed = 42u64;
     let mut subset_vs_all = false;
     let mut subset_a = SubsetConfig::default();
     let mut subset_b = SubsetConfig::default();
@@ -162,6 +212,30 @@ fn parse_args() -> Result<
         let arg = &args[i];
         if arg == "--time" {
             time_tracking = true;
+            i += 1;
+        } else if arg == "--with-pvalues" {
+            with_pvalues = true;
+            i += 1;
+        } else if arg == "--pvalue-mode" {
+            let value = args.get(i + 1).ok_or("Missing value for --pvalue-mode")?;
+            pvalue_mode = value.parse().map_err(|_| "Invalid --pvalue-mode value")?;
+            i += 2;
+        } else if let Some(value) = arg.strip_prefix("--pvalue-mode=") {
+            pvalue_mode = value.parse().map_err(|_| "Invalid --pvalue-mode value")?;
+            i += 1;
+        } else if arg == "--mc-samples" {
+            let value = args.get(i + 1).ok_or("Missing value for --mc-samples")?;
+            mc_samples = value.parse().map_err(|_| "Invalid --mc-samples value")?;
+            i += 2;
+        } else if let Some(value) = arg.strip_prefix("--mc-samples=") {
+            mc_samples = value.parse().map_err(|_| "Invalid --mc-samples value")?;
+            i += 1;
+        } else if arg == "--mc-seed" {
+            let value = args.get(i + 1).ok_or("Missing value for --mc-seed")?;
+            mc_seed = value.parse().map_err(|_| "Invalid --mc-seed value")?;
+            i += 2;
+        } else if let Some(value) = arg.strip_prefix("--mc-seed=") {
+            mc_seed = value.parse().map_err(|_| "Invalid --mc-seed value")?;
             i += 1;
         } else if arg == "--subset-vs-all" {
             subset_vs_all = true;
@@ -305,6 +379,10 @@ fn parse_args() -> Result<
         correlation_type,
         num_threads,
         time_tracking,
+        with_pvalues,
+        pvalue_mode,
+        mc_samples,
+        mc_seed,
         subset_vs_all,
         subset_a,
         subset_b,
@@ -439,6 +517,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         correlation_type,
         num_threads,
         time_tracking,
+        with_pvalues,
+        pvalue_mode,
+        mc_samples,
+        mc_seed,
         subset_vs_all,
         subset_cfg_a,
         subset_cfg_b,
@@ -499,6 +581,28 @@ fn main() -> Result<(), Box<dyn Error>> {
     if subset_vs_all && !subset_cfg_a.has_any() {
         return Err("--subset-vs-all requires subset A selection (--subset-size/--subset-file/--subset-rows or --subset-a-*)".into());
     }
+    if with_pvalues && mc_samples == 0 {
+        return Err("--mc-samples must be greater than 0".into());
+    }
+    if with_pvalues {
+        match (correlation_type, pvalue_mode) {
+            (CorrelationType::Hellcor, PvalueMode::Analytic) => {
+                return Err(
+                    "Analytic p-values are not available for hellcor; use --pvalue-mode mc or auto"
+                        .into(),
+                );
+            }
+            (CorrelationType::Pearson, PvalueMode::Mc)
+            | (CorrelationType::Spearman, PvalueMode::Mc)
+            | (CorrelationType::Kendall, PvalueMode::Mc)
+            | (CorrelationType::Bicor, PvalueMode::Mc) => {
+                return Err(
+                    "Monte Carlo p-values are currently implemented only for hellcor".into(),
+                );
+            }
+            _ => {}
+        }
+    }
 
     let (row_ids_a, subset_tag_a) = apply_subset(&all_row_ids, &subset_cfg_a)?;
     if let Some(tag) = &subset_tag_a {
@@ -544,6 +648,12 @@ fn main() -> Result<(), Box<dyn Error>> {
             row_data.values().next().map(|v| v.len()).unwrap_or(0)
         );
     }
+    if with_pvalues {
+        println!(
+            "P-value estimation enabled (mode={}, mc_samples={}, mc_seed={}).",
+            pvalue_mode, mc_samples, mc_seed
+        );
+    }
 
     let data_matrix_a = build_data_matrix(&row_ids_a, &row_data);
     let data_matrix_b = if use_subset_b {
@@ -558,45 +668,100 @@ fn main() -> Result<(), Box<dyn Error>> {
     } else {
         None
     };
-    let mut correlation_matrix = match correlation_type {
+    let (mut correlation_matrix, mut pvalue_matrix) = match correlation_type {
         CorrelationType::Pearson => {
             println!("Computing Pearson correlations...");
-            if let Some(ref b) = data_matrix_b {
-                pearson_cross_matrix(&data_matrix_a, b)
+            if with_pvalues {
+                if let Some(ref b) = data_matrix_b {
+                    let (corr, pvals) = pearson_cross_matrix_with_pvalues(&data_matrix_a, b);
+                    (corr, Some(pvals))
+                } else {
+                    let (corr, pvals) = pearson_correlation_matrix_with_pvalues(&data_matrix_a);
+                    (corr, Some(pvals))
+                }
+            } else if let Some(ref b) = data_matrix_b {
+                (pearson_cross_matrix(&data_matrix_a, b), None)
             } else {
-                pearson_correlation_matrix(&data_matrix_a)
+                (pearson_correlation_matrix(&data_matrix_a), None)
             }
         }
         CorrelationType::Spearman => {
             println!("Computing Spearman correlations...");
-            if let Some(ref b) = data_matrix_b {
-                spearman_cross_matrix(&data_matrix_a, b)
+            if with_pvalues {
+                if let Some(ref b) = data_matrix_b {
+                    let (corr, pvals) = spearman_cross_matrix_with_pvalues(&data_matrix_a, b);
+                    (corr, Some(pvals))
+                } else {
+                    let (corr, pvals) = spearman_correlation_matrix_with_pvalues(&data_matrix_a);
+                    (corr, Some(pvals))
+                }
+            } else if let Some(ref b) = data_matrix_b {
+                (spearman_cross_matrix(&data_matrix_a, b), None)
             } else {
-                spearman_correlation_matrix(&data_matrix_a)
+                (spearman_correlation_matrix(&data_matrix_a), None)
             }
         }
         CorrelationType::Kendall => {
             println!("Computing Kendall correlations...");
-            if let Some(ref b) = data_matrix_b {
-                kendall_cross_matrix(&data_matrix_a, b)
+            if with_pvalues {
+                if let Some(ref b) = data_matrix_b {
+                    let (corr, pvals) = kendall_cross_matrix_with_pvalues(&data_matrix_a, b);
+                    (corr, Some(pvals))
+                } else {
+                    let (corr, pvals) = kendall_correlation_matrix_with_pvalues(&data_matrix_a);
+                    (corr, Some(pvals))
+                }
+            } else if let Some(ref b) = data_matrix_b {
+                (kendall_cross_matrix(&data_matrix_a, b), None)
             } else {
-                kendall_correlation_matrix(&data_matrix_a)
+                (kendall_correlation_matrix(&data_matrix_a), None)
             }
         }
         CorrelationType::Bicor => {
             println!("Computing biweight midcorrelations (bicor)...");
-            if let Some(ref b) = data_matrix_b {
-                bicor_cross_matrix(&data_matrix_a, b)
+            if with_pvalues {
+                if let Some(ref b) = data_matrix_b {
+                    let (corr, pvals) = bicor_cross_matrix_with_pvalues(&data_matrix_a, b);
+                    (corr, Some(pvals))
+                } else {
+                    let (corr, pvals) = bicor_correlation_matrix_with_pvalues(&data_matrix_a);
+                    (corr, Some(pvals))
+                }
+            } else if let Some(ref b) = data_matrix_b {
+                (bicor_cross_matrix(&data_matrix_a, b), None)
             } else {
-                bicor_correlation_matrix(&data_matrix_a)
+                (bicor_correlation_matrix(&data_matrix_a), None)
             }
         }
         CorrelationType::Hellcor => {
             println!("Computing Hellinger correlations (hellcor)...");
-            if let Some(ref b) = data_matrix_b {
-                hellcor_cross_matrix(&data_matrix_a, b)
+            if with_pvalues {
+                let use_mc = matches!(pvalue_mode, PvalueMode::Mc | PvalueMode::Auto);
+                if !use_mc {
+                    return Err("Hellcor p-values require Monte Carlo mode".into());
+                }
+                if let Some(ref b) = data_matrix_b {
+                    let (corr, pvals) = hellcor_cross_matrix_with_pvalues(
+                        &data_matrix_a,
+                        b,
+                        6.0,
+                        mc_samples,
+                        mc_seed,
+                    );
+                    (corr, Some(pvals))
+                } else {
+                    let (corr, pvals) = hellcor_correlation_matrix_with_pvalues(
+                        &data_matrix_a,
+                        6.0,
+                        mc_samples,
+                        mc_seed,
+                    );
+                    (corr, Some(pvals))
+                }
+            } else if let Some(ref b) = data_matrix_b {
+                (hellcor_cross_matrix(&data_matrix_a, b), None)
             } else {
-                hellcor_correlation_matrix(&data_matrix_a)
+                (hellcor_correlation_matrix(&data_matrix_a), None)
             }
         }
     };
@@ -611,6 +776,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         for (i, id) in row_ids_a.iter().enumerate() {
             if let Some(&j) = b_index.get(id.as_str()) {
                 correlation_matrix[[i, j]] = 1.0;
+                if let Some(ref mut pvals) = pvalue_matrix {
+                    pvals[[i, j]] = 0.0;
+                }
             }
         }
     }
@@ -638,26 +806,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     } else {
         None
     };
-    let mut csv_buf = Vec::<u8>::new();
-    {
-        let mut wtr = WriterBuilder::new()
-            .delimiter(b'\t')
-            .from_writer(&mut csv_buf);
-
-        wtr.write_record(std::iter::once("").chain(output_col_ids.iter().map(String::as_str)))?;
-
-        for (i, row_id) in output_row_ids.iter().enumerate() {
-            let row_vals: Vec<String> = correlation_matrix
-                .row(i)
-                .iter()
-                .map(|&r| r.to_string())
-                .collect();
-            wtr.write_record(
-                std::iter::once(row_id.as_str()).chain(row_vals.iter().map(String::as_str)),
-            )?;
-        }
-        wtr.flush()?;
-    }
+    let corr_tsv = matrix_to_tsv_bytes(&output_row_ids, &output_col_ids, &correlation_matrix)?;
+    let pval_tsv = if let Some(ref pvals) = pvalue_matrix {
+        Some(matrix_to_tsv_bytes(
+            &output_row_ids,
+            &output_col_ids,
+            pvals,
+        )?)
+    } else {
+        None
+    };
 
     let correlation_suffix = correlation_type.to_string().to_lowercase();
 
@@ -689,13 +847,21 @@ fn main() -> Result<(), Box<dyn Error>> {
     let enc = GzEncoder::new(tar_gz_file, Compression::default());
     let mut tar_builder = Builder::new(enc);
 
-    let mut header = Header::new_gnu();
-    header.set_size(csv_buf.len() as u64);
-    header.set_mode(0o644);
-    header.set_cksum();
+    let mut corr_header = Header::new_gnu();
+    corr_header.set_size(corr_tsv.len() as u64);
+    corr_header.set_mode(0o644);
+    corr_header.set_cksum();
+    let corr_name = format!("{}_{}_correlations.tsv", output_base, correlation_suffix);
+    tar_builder.append_data(&mut corr_header, corr_name, &mut Cursor::new(corr_tsv))?;
 
-    let csv_name = format!("{}_{}_correlations.tsv", output_base, correlation_suffix);
-    tar_builder.append_data(&mut header, csv_name, &mut Cursor::new(csv_buf))?;
+    if let Some(pvals_buf) = pval_tsv {
+        let mut pval_header = Header::new_gnu();
+        pval_header.set_size(pvals_buf.len() as u64);
+        pval_header.set_mode(0o644);
+        pval_header.set_cksum();
+        let pval_name = format!("{}_{}_pvalues.tsv", output_base, correlation_suffix);
+        tar_builder.append_data(&mut pval_header, pval_name, &mut Cursor::new(pvals_buf))?;
+    }
     tar_builder.finish()?;
     let output_duration = output_start.map(|start| start.elapsed());
 

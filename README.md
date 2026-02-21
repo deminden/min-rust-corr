@@ -108,6 +108,50 @@ General note (all correlation types): results are floating‑point computations 
 
 Hellcor parity: measured max absolute difference vs `HellCor::HellCor` (R/C++ implementation) on GTEx bladder tissue (N = 77 samples, 2,950 genes) is `1.60e-12`.
 
+## P-value Parity vs R (Snapshot)
+
+Command used:
+
+```bash
+Rscript crates/core/tests/pvalue_parity_check.R data/bladder_small_590genes.tsv.gz 12 100 42
+```
+
+Setup:
+- data: GTEx bladder tissue subset (`12` genes, `77` samples) for analytic p-value parity.
+- hellcor MC behavior: independent uniforms with `n=276` pairwise p-values, `mc_samples=100`.
+
+Analytic p-value parity (Rust vs R):
+
+| Method | MAE | RMSE | Max abs diff | Correlation |
+| --- | --- | --- | --- | --- |
+| Pearson | 2.564e-14 | 3.699e-14 | 8.030e-14 | 1.000000 |
+| Spearman | 5.262e-14 | 2.319e-13 | 1.851e-12 | 1.000000 |
+| Kendall | 5.070e-12 | 1.159e-11 | 4.028e-11 | 1.000000 |
+| Bicor | 2.521e-14 | 3.738e-14 | 8.077e-14 | 1.000000 |
+
+Hellcor Monte Carlo p-value behavior under independence:
+- Rust KS vs `U(0,1)`: `D=0.1257`, `p=3.244e-4`, `n=276`
+- R KS vs `U(0,1)`: `D=0.1216`, `p=5.697e-4`, `n=276`
+- Rust vs R two-sample KS: `D=0.1159`, `p=4.895e-2`, `n=276`
+
+## P-value Timing vs R (Calculation Only)
+
+Snapshot benchmark for p-value estimation + correlation calculation:
+
+- data: GTEx bladder tissue (`77` samples)
+- Pearson/Spearman/Kendall/Bicor: `120` genes
+- Hellcor MC: `24` genes, `mc_samples=300`, `seed=42`
+- Rust: `16` threads (`mincorr-cli`)
+- R: `32` threads (WGCNA threads enabled; Hellcor uses shared-null MC strategy for parity with Rust mode)
+
+| Method | Rust (s) | R (s) | Speedup (R/Rust) |
+| --- | --- | --- | --- |
+| Pearson | 0.004 | 0.028 | 7.0x |
+| Spearman | 0.005 | 0.282 | 56.4x |
+| Kendall | 0.005 | 1.914 | 382.8x |
+| Bicor | 0.005 | 0.017 | 3.4x |
+| Hellcor (MC, B=300, 24 genes) | 0.258 | 6.804 | 26.4x |
+
 ## Timing Comparison (Correlation Calculation Only)
 
 Benchmarked on AMD Ryzen 9 7950X3D (16 cores, 32 threads). Times exclude load/output.
@@ -150,6 +194,9 @@ GTEx bladder tissue (N = 77, 2950 genes)
 
 # Compare results with R implementations  
 Rscript crates/core/tests/investigate_diffs.R data/your_file.tsv.gz
+
+# Compact p-value parity checks (Pearson/Spearman/Kendall/Bicor + Hellcor MC behavior)
+Rscript crates/core/tests/pvalue_parity_check.R data/your_file.tsv.gz
 ```
 
 ## Subset and Cross Modes (CLI + Python)
@@ -173,6 +220,10 @@ mincorr data.tsv.gz pearson --subset-a-file genes_a.txt --subset-b-file genes_b.
 
 # A x all
 mincorr data.tsv.gz pearson --subset-size 500 --subset-seed 42 --subset-vs-all
+
+# Correlation + p-values
+mincorr data.tsv.gz pearson --with-pvalues
+mincorr data.tsv.gz hellcor --with-pvalues --pvalue-mode mc --mc-samples 10000 --mc-seed 42
 ```
 
 Rules:
@@ -182,6 +233,14 @@ Rules:
 - `--subset-rows ID1,ID2,...` accepts comma-separated row IDs.
 - On each side (`A` or `B`), use exactly one selector: `size`, `file`, or `rows`.
 - `--subset-vs-all` requires subset A and cannot be combined with `--subset-b-*`.
+
+P-value options:
+
+- `--with-pvalues` writes an additional `..._<method>_pvalues.tsv` into the output tarball.
+- `--pvalue-mode auto|analytic|mc` controls estimator type.
+- `--mc-samples B` and `--mc-seed S` configure Monte Carlo sampling (used by hellcor).
+- Analytic p-values are available for `pearson`, `spearman`, `kendall`, `bicor`.
+- `hellcor` uses Monte Carlo p-values under independence (R-style null simulation).
 
 ### Python
 
@@ -209,6 +268,13 @@ Python cross functions available for all methods:
 - `kendall_cross_matrix`
 - `bicor_cross_matrix`
 - `hellcor_cross_matrix`
+
+Python p-value APIs:
+
+- `pearson_matrix_with_pvalues`, `spearman_matrix_with_pvalues`, `kendall_matrix_with_pvalues`, `bicor_matrix_with_pvalues`
+- `hellcor_matrix_with_pvalues(data, alpha=6.0, mc_samples=10000, seed=42)`
+- `pearson_cross_matrix_with_pvalues`, `spearman_cross_matrix_with_pvalues`, `kendall_cross_matrix_with_pvalues`, `bicor_cross_matrix_with_pvalues`
+- `hellcor_cross_matrix_with_pvalues(data_a, data_b, alpha=6.0, mc_samples=10000, seed=42)`
 
 Inputs must have the same number of columns (samples) in both matrices.
 

@@ -2,16 +2,20 @@
 // References in comments are to the Hellinger correlation paper https://arxiv.org/abs/1810.10276
 
 use ndarray::{Array2, ArrayBase, ArrayView1, Data, Ix2};
+use rand::{Rng, SeedableRng, rngs::StdRng};
 use rayon::prelude::*;
 use std::fs::File;
 use std::io::{self, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::hellinger::{dbeta, qbeta};
+use crate::pvalues::hellcor_empirical_pvalue;
 
 const DEFAULT_KMAX: usize = 20;
 const DEFAULT_LMAX: usize = 20;
 const DEFAULT_ALPHA: f64 = 6.0;
+const DEFAULT_MC_SAMPLES: usize = 10_000;
+const DEFAULT_MC_SEED: u64 = 42;
 const SQRT2: f64 = 1.4142135623730951;
 
 struct HellcorRow {
@@ -679,6 +683,108 @@ where
     S2: Data<Elem = f64> + Sync,
 {
     correlation_cross_matrix_impl(lhs, rhs, alpha)
+}
+
+pub fn null_distribution(n_samples: usize, alpha: f64, mc_samples: usize, seed: u64) -> Vec<f64> {
+    if n_samples == 0 || mc_samples == 0 {
+        return Vec::new();
+    }
+
+    let mut null_vals: Vec<f64> = (0..mc_samples)
+        .into_par_iter()
+        .map(|iter| {
+            // Seed each replicate independently to keep MC deterministic with rayon scheduling.
+            let stream_seed = seed ^ (iter as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15);
+            let mut rng = StdRng::seed_from_u64(stream_seed);
+            let mut x = vec![0.0; n_samples];
+            let mut y = vec![0.0; n_samples];
+            for i in 0..n_samples {
+                x[i] = rng.r#gen::<f64>();
+                y[i] = rng.r#gen::<f64>();
+            }
+            hellcor_pair(&x, &y, alpha)
+        })
+        .filter(|v| v.is_finite())
+        .collect();
+
+    null_vals.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    null_vals
+}
+
+fn pvalues_from_null(corr: &Array2<f64>, null_sorted: &[f64], set_diag_zero: bool) -> Array2<f64> {
+    let (n_rows, n_cols) = corr.dim();
+    let mut pvals = Array2::<f64>::from_elem((n_rows, n_cols), f64::NAN);
+    for i in 0..n_rows {
+        for j in 0..n_cols {
+            if set_diag_zero && i == j {
+                pvals[[i, j]] = 0.0;
+            } else {
+                pvals[[i, j]] = hellcor_empirical_pvalue(corr[[i, j]], null_sorted);
+            }
+        }
+    }
+    pvals
+}
+
+pub fn correlation_matrix_with_pvalues<S>(data: &ArrayBase<S, Ix2>) -> (Array2<f64>, Array2<f64>)
+where
+    S: Data<Elem = f64> + Sync,
+{
+    correlation_matrix_with_pvalues_with_alpha(
+        data,
+        DEFAULT_ALPHA,
+        DEFAULT_MC_SAMPLES,
+        DEFAULT_MC_SEED,
+    )
+}
+
+pub fn correlation_matrix_with_pvalues_with_alpha<S>(
+    data: &ArrayBase<S, Ix2>,
+    alpha: f64,
+    mc_samples: usize,
+    seed: u64,
+) -> (Array2<f64>, Array2<f64>)
+where
+    S: Data<Elem = f64> + Sync,
+{
+    let corr = correlation_matrix_impl(data, alpha);
+    let null = null_distribution(data.ncols(), alpha, mc_samples, seed);
+    let pvals = pvalues_from_null(&corr, &null, true);
+    (corr, pvals)
+}
+
+pub fn correlation_cross_matrix_with_pvalues<S1, S2>(
+    lhs: &ArrayBase<S1, Ix2>,
+    rhs: &ArrayBase<S2, Ix2>,
+) -> (Array2<f64>, Array2<f64>)
+where
+    S1: Data<Elem = f64> + Sync,
+    S2: Data<Elem = f64> + Sync,
+{
+    correlation_cross_matrix_with_pvalues_with_alpha(
+        lhs,
+        rhs,
+        DEFAULT_ALPHA,
+        DEFAULT_MC_SAMPLES,
+        DEFAULT_MC_SEED,
+    )
+}
+
+pub fn correlation_cross_matrix_with_pvalues_with_alpha<S1, S2>(
+    lhs: &ArrayBase<S1, Ix2>,
+    rhs: &ArrayBase<S2, Ix2>,
+    alpha: f64,
+    mc_samples: usize,
+    seed: u64,
+) -> (Array2<f64>, Array2<f64>)
+where
+    S1: Data<Elem = f64> + Sync,
+    S2: Data<Elem = f64> + Sync,
+{
+    let corr = correlation_cross_matrix_impl(lhs, rhs, alpha);
+    let null = null_distribution(lhs.ncols(), alpha, mc_samples, seed);
+    let pvals = pvalues_from_null(&corr, &null, false);
+    (corr, pvals)
 }
 
 fn correlation_upper_triangle_impl<S>(data: &ArrayBase<S, Ix2>, alpha: f64) -> Vec<f64>
