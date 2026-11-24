@@ -20,18 +20,6 @@ use std::{
 use strum_macros::{Display, EnumString};
 use tar::{Archive, Builder, Header};
 
-use mincorr::bicor::{
-    correlation_cross_matrix as bicor_cross_matrix,
-    correlation_cross_matrix_with_pvalues as bicor_cross_matrix_with_pvalues,
-    correlation_matrix as bicor_correlation_matrix,
-    correlation_matrix_with_pvalues as bicor_correlation_matrix_with_pvalues,
-};
-use mincorr::hellcor::{
-    correlation_cross_matrix as hellcor_cross_matrix,
-    correlation_cross_matrix_with_pvalues_with_alpha as hellcor_cross_matrix_with_pvalues,
-    correlation_matrix as hellcor_correlation_matrix,
-    correlation_matrix_with_pvalues_with_alpha as hellcor_correlation_matrix_with_pvalues,
-};
 use mincorr::kendall::{
     correlation_cross_matrix as kendall_cross_matrix,
     correlation_cross_matrix_with_pvalues as kendall_cross_matrix_with_pvalues,
@@ -717,52 +705,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                 (kendall_correlation_matrix(&data_matrix_a), None)
             }
         }
-        CorrelationType::Bicor => {
-            println!("Computing biweight midcorrelations (bicor)...");
-            if with_pvalues {
-                if let Some(ref b) = data_matrix_b {
-                    let (corr, pvals) = bicor_cross_matrix_with_pvalues(&data_matrix_a, b);
-                    (corr, Some(pvals))
-                } else {
-                    let (corr, pvals) = bicor_correlation_matrix_with_pvalues(&data_matrix_a);
-                    (corr, Some(pvals))
-                }
-            } else if let Some(ref b) = data_matrix_b {
-                (bicor_cross_matrix(&data_matrix_a, b), None)
-            } else {
-                (bicor_correlation_matrix(&data_matrix_a), None)
-            }
-        }
-        CorrelationType::Hellcor => {
-            println!("Computing Hellinger correlations (hellcor)...");
-            if with_pvalues {
-                let use_mc = matches!(pvalue_mode, PvalueMode::Mc | PvalueMode::Auto);
-                if !use_mc {
-                    return Err("Hellcor p-values require Monte Carlo mode".into());
-                }
-                if let Some(ref b) = data_matrix_b {
-                    let (corr, pvals) = hellcor_cross_matrix_with_pvalues(
-                        &data_matrix_a,
-                        b,
-                        6.0,
-                        mc_samples,
-                        mc_seed,
-                    );
-                    (corr, Some(pvals))
-                } else {
-                    let (corr, pvals) = hellcor_correlation_matrix_with_pvalues(
-                        &data_matrix_a,
-                        6.0,
-                        mc_samples,
-                        mc_seed,
-                    );
-                    (corr, Some(pvals))
-                }
-            } else if let Some(ref b) = data_matrix_b {
-                (hellcor_cross_matrix(&data_matrix_a, b), None)
-            } else {
-                (hellcor_correlation_matrix(&data_matrix_a), None)
-            }
+        CorrelationType::Bicor | CorrelationType::Hellcor => {
+            return Err("bicor/hellcor: not yet implemented on the mit-rewrite branch".into());
         }
     };
 

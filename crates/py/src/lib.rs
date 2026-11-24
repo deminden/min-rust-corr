@@ -50,8 +50,8 @@ fn hellcor_pair(
     y: PyReadonlyArray1<'_, f64>,
     alpha: f64,
 ) -> PyResult<f64> {
-    let (x_vals, y_vals) = owned_pair(x, y)?;
-    Ok(py.detach(|| mincorr_core::hellcor_pair(&x_vals, &y_vals, alpha)))
+    let _ = py;
+    Err(pyo3::exceptions::PyNotImplementedError::new_err("not yet implemented on the mit-rewrite branch"))
 }
 
 #[pyfunction]
@@ -96,10 +96,8 @@ fn bicor_pair(
     x: PyReadonlyArray1<'_, f64>,
     y: PyReadonlyArray1<'_, f64>,
 ) -> PyResult<f64> {
-    let (x_vals, y_vals) = owned_pair(x, y)?;
-    let data = pair_matrix_from_slices(&x_vals, &y_vals);
-    let corr = py.detach(|| mincorr_core::bicor::correlation_matrix(&data));
-    Ok(corr[[0, 1]])
+    let _ = py;
+    Err(pyo3::exceptions::PyNotImplementedError::new_err("not yet implemented on the mit-rewrite branch"))
 }
 
 #[pyfunction]
@@ -125,9 +123,8 @@ fn kendall_matrix(py: Python<'_>, data: PyReadonlyArray2<'_, f64>) -> PyResult<P
 
 #[pyfunction]
 fn bicor_matrix(py: Python<'_>, data: PyReadonlyArray2<'_, f64>) -> PyResult<Py<PyArray2<f64>>> {
-    let data_view = data.as_array();
-    let corr = py.detach(|| mincorr_core::bicor::correlation_matrix(&data_view));
-    Ok(corr.into_pyarray(py).into())
+    let _ = (py, data);
+    Err(pyo3::exceptions::PyNotImplementedError::new_err("not yet implemented on the mit-rewrite branch"))
 }
 
 #[pyfunction]
@@ -137,10 +134,8 @@ fn hellcor_matrix(
     data: PyReadonlyArray2<'_, f64>,
     alpha: f64,
 ) -> PyResult<Py<PyArray2<f64>>> {
-    let data_view = data.as_array();
-    let corr =
-        py.detach(|| mincorr_core::hellcor::correlation_matrix_with_alpha(&data_view, alpha));
-    Ok(corr.into_pyarray(py).into())
+    let _ = py;
+    Err(pyo3::exceptions::PyNotImplementedError::new_err("not yet implemented on the mit-rewrite branch"))
 }
 
 #[pyfunction]
@@ -191,12 +186,8 @@ fn bicor_cross_matrix(
     data_a: PyReadonlyArray2<'_, f64>,
     data_b: PyReadonlyArray2<'_, f64>,
 ) -> PyResult<Py<PyArray2<f64>>> {
-    let data_a_view = data_a.as_array();
-    let data_b_view = data_b.as_array();
-    ensure_same_ncols(&data_a_view, &data_b_view)?;
-    let corr =
-        py.detach(|| mincorr_core::bicor::correlation_cross_matrix(&data_a_view, &data_b_view));
-    Ok(corr.into_pyarray(py).into())
+    let _ = py;
+    Err(pyo3::exceptions::PyNotImplementedError::new_err("not yet implemented on the mit-rewrite branch"))
 }
 
 #[pyfunction]
@@ -207,17 +198,8 @@ fn hellcor_cross_matrix(
     data_b: PyReadonlyArray2<'_, f64>,
     alpha: f64,
 ) -> PyResult<Py<PyArray2<f64>>> {
-    let data_a_view = data_a.as_array();
-    let data_b_view = data_b.as_array();
-    ensure_same_ncols(&data_a_view, &data_b_view)?;
-    let corr = py.detach(|| {
-        mincorr_core::hellcor::correlation_cross_matrix_with_alpha(
-            &data_a_view,
-            &data_b_view,
-            alpha,
-        )
-    });
-    Ok(corr.into_pyarray(py).into())
+    let _ = py;
+    Err(pyo3::exceptions::PyNotImplementedError::new_err("not yet implemented on the mit-rewrite branch"))
 }
 
 #[pyfunction]
@@ -258,10 +240,8 @@ fn bicor_matrix_with_pvalues(
     py: Python<'_>,
     data: PyReadonlyArray2<'_, f64>,
 ) -> PyResult<(Py<PyArray2<f64>>, Py<PyArray2<f64>>)> {
-    let data_view = data.as_array();
-    let (corr, pvals) =
-        py.detach(|| mincorr_core::bicor::correlation_matrix_with_pvalues(&data_view));
-    Ok((corr.into_pyarray(py).into(), pvals.into_pyarray(py).into()))
+    let _ = py;
+    Err(pyo3::exceptions::PyNotImplementedError::new_err("not yet implemented on the mit-rewrite branch"))
 }
 
 #[pyfunction]
@@ -273,13 +253,8 @@ fn hellcor_matrix_with_pvalues(
     mc_samples: usize,
     seed: u64,
 ) -> PyResult<(Py<PyArray2<f64>>, Py<PyArray2<f64>>)> {
-    let data_view = data.as_array();
-    let (corr, pvals) = py.detach(|| {
-        mincorr_core::hellcor::correlation_matrix_with_pvalues_with_alpha(
-            &data_view, alpha, mc_samples, seed,
-        )
-    });
-    Ok((corr.into_pyarray(py).into(), pvals.into_pyarray(py).into()))
+    let _ = py;
+    Err(pyo3::exceptions::PyNotImplementedError::new_err("not yet implemented on the mit-rewrite branch"))
 }
 
 #[pyfunction]
@@ -333,13 +308,8 @@ fn bicor_cross_matrix_with_pvalues(
     data_a: PyReadonlyArray2<'_, f64>,
     data_b: PyReadonlyArray2<'_, f64>,
 ) -> PyResult<(Py<PyArray2<f64>>, Py<PyArray2<f64>>)> {
-    let data_a_view = data_a.as_array();
-    let data_b_view = data_b.as_array();
-    ensure_same_ncols(&data_a_view, &data_b_view)?;
-    let (corr, pvals) = py.detach(|| {
-        mincorr_core::bicor::correlation_cross_matrix_with_pvalues(&data_a_view, &data_b_view)
-    });
-    Ok((corr.into_pyarray(py).into(), pvals.into_pyarray(py).into()))
+    let _ = py;
+    Err(pyo3::exceptions::PyNotImplementedError::new_err("not yet implemented on the mit-rewrite branch"))
 }
 
 #[pyfunction]
@@ -352,19 +322,8 @@ fn hellcor_cross_matrix_with_pvalues(
     mc_samples: usize,
     seed: u64,
 ) -> PyResult<(Py<PyArray2<f64>>, Py<PyArray2<f64>>)> {
-    let data_a_view = data_a.as_array();
-    let data_b_view = data_b.as_array();
-    ensure_same_ncols(&data_a_view, &data_b_view)?;
-    let (corr, pvals) = py.detach(|| {
-        mincorr_core::hellcor::correlation_cross_matrix_with_pvalues_with_alpha(
-            &data_a_view,
-            &data_b_view,
-            alpha,
-            mc_samples,
-            seed,
-        )
-    });
-    Ok((corr.into_pyarray(py).into(), pvals.into_pyarray(py).into()))
+    let _ = py;
+    Err(pyo3::exceptions::PyNotImplementedError::new_err("not yet implemented on the mit-rewrite branch"))
 }
 
 #[pyfunction]
@@ -402,9 +361,8 @@ fn bicor_upper_triangle(
     py: Python<'_>,
     data: PyReadonlyArray2<'_, f64>,
 ) -> PyResult<Py<PyArray1<f64>>> {
-    let data_view = data.as_array();
-    let corr = py.detach(|| mincorr_core::bicor::correlation_upper_triangle(&data_view));
-    Ok(corr.into_pyarray(py).into())
+    let _ = py;
+    Err(pyo3::exceptions::PyNotImplementedError::new_err("not yet implemented on the mit-rewrite branch"))
 }
 
 #[pyfunction]
@@ -414,10 +372,8 @@ fn hellcor_upper_triangle(
     data: PyReadonlyArray2<'_, f64>,
     alpha: f64,
 ) -> PyResult<Py<PyArray1<f64>>> {
-    let data_view = data.as_array();
-    let corr = py
-        .detach(|| mincorr_core::hellcor::correlation_upper_triangle_with_alpha(&data_view, alpha));
-    Ok(corr.into_pyarray(py).into())
+    let _ = py;
+    Err(pyo3::exceptions::PyNotImplementedError::new_err("not yet implemented on the mit-rewrite branch"))
 }
 
 #[pymodule]
