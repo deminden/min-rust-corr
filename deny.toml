@@ -17,17 +17,6 @@ allow = [
 ]
 confidence-threshold = 0.9
 
-[[licenses.exceptions]]
-# Workspace crates: relicensed to MIT at the end of the rewrite.
-allow = ["GPL-2.0-or-later", "MIT"]
-crate = "mincorr"
-[[licenses.exceptions]]
-allow = ["GPL-2.0-or-later", "MIT"]
-crate = "mincorr-cli"
-[[licenses.exceptions]]
-allow = ["GPL-2.0-or-later", "MIT"]
-crate = "mincorr-py"
-
 [bans]
 multiple-versions = "warn"
 deny = [{ name = "kendalls" }, { name = "statrs" }]

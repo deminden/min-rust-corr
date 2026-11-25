@@ -7,7 +7,7 @@ name = "mincorrpy"
 version = "0.3.0.dev0"
 description = "Fast correlation matrices (Pearson, Spearman, Kendall, bicor, Hellinger) from Rust"
 requires-python = ">=3.9"
-license = { text = "GPL-2.0-or-later" }
+license = { text = "MIT" }
 authors = [{ name = "Denis Demin" }]
 dependencies = ["numpy>=1.21"]
 classifiers = ["Programming Language :: Rust", "Programming Language :: Python :: 3", "Topic :: Scientific/Engineering"]

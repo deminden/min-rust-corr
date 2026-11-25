@@ -1,0 +1,50 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "mincorr: fast correlation matrices (Pearson, Spearman, Kendall, bicor, Hellinger)"
+type: software
+authors:
+  - family-names: Demin
+    given-names: Denis
+version: 0.3.0
+license: MIT
+repository-code: "https://github.com/deminden/min-rust-corr"
+keywords:
+  - correlation
+  - co-expression
+  - Kendall tau
+  - biweight midcorrelation
+  - Hellinger correlation
+references:
+  - type: article
+    authors:
+      - family-names: Geenens
+        given-names: Gery
+      - family-names: Lafaye de Micheaux
+        given-names: Pierre
+    title: "The Hellinger Correlation"
+    journal: "Journal of the American Statistical Association"
+    volume: 117
+    issue: 538
+    start: 639
+    end: 653
+    year: 2022
+  - type: article
+    authors:
+      - family-names: Langfelder
+        given-names: Peter
+      - family-names: Horvath
+        given-names: Steve
+    title: "Fast R Functions for Robust Correlations and Hierarchical Clustering"
+    journal: "Journal of Statistical Software"
+    volume: 46
+    issue: 11
+    year: 2012
+  - type: article
+    authors:
+      - family-names: Knight
+        given-names: William R.
+    title: "A Computer Method for Calculating Kendall's Tau with Ungrouped Data"
+    journal: "Journal of the American Statistical Association"
+    volume: 61
+    issue: 314
+    year: 1966

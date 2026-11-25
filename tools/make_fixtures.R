@@ -98,8 +98,10 @@ for (nm in names(datasets)) {
       h <- matrix(NA_real_, nrow(m), nrow(m))
       for (i in seq_len(nrow(m))) for (j in seq_len(nrow(m))) {
         if (j <= i) next
-        res <- if (a == 6) HellCor::HellCor(m[i, ], m[j, ]) else HellCor::HellCor(m[i, ], m[j, ], alpha = a)
-        v <- if (is.list(res) && !is.null(res$Hcor)) res$Hcor else as.numeric(unlist(res))[1]
+        res <- tryCatch(
+          if (a == 6) HellCor::HellCor(m[i, ], m[j, ]) else HellCor::HellCor(m[i, ], m[j, ], alpha = a),
+          error = function(e) NULL)
+        v <- if (is.null(res)) NA_real_ else if (is.list(res) && !is.null(res$Hcor)) res$Hcor else as.numeric(unlist(res))[1]
         h[i, j] <- v
         h[j, i] <- v
       }

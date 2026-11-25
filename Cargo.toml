@@ -8,7 +8,7 @@ edition = "2024"
 rust-version = "1.85"
 authors = ["Denis Demin"]
 repository = "https://github.com/deminden/min-rust-corr"
-license = "GPL-2.0-or-later"
+license = "MIT"
 
 [workspace.dependencies]
 mincorr = { path = "crates/core", version = "0.3.0-dev" }
