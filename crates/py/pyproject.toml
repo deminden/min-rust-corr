@@ -1,12 +1,23 @@
 [build-system]
-requires = ["maturin>=1.0,<2.0"]
+requires = ["maturin>=1.5,<2.0"]
 build-backend = "maturin"
 
 [project]
 name = "mincorrpy"
-version = "0.2.1"
-requires-python = ">=3.8"
+version = "0.3.0.dev0"
+description = "Fast correlation matrices (Pearson, Spearman, Kendall, bicor, Hellinger) from Rust"
+requires-python = ">=3.9"
 license = { text = "GPL-2.0-or-later" }
+authors = [{ name = "Denis Demin" }]
+dependencies = ["numpy>=1.21"]
+classifiers = ["Programming Language :: Rust", "Programming Language :: Python :: 3", "Topic :: Scientific/Engineering"]
+
+[project.optional-dependencies]
+pandas = ["pandas>=1.3"]
+test = ["pytest", "scipy"]
 
 [tool.maturin]
 bindings = "pyo3"
+module-name = "mincorr._core"
+python-source = "python"
+features = ["pyo3/extension-module"]

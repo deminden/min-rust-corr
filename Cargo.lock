@@ -482,8 +482,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "mincorrpy"
-version = "0.2.1"
+name = "mincorr-py"
+version = "0.3.0-dev"
 dependencies = [
  "mincorr",
  "ndarray",

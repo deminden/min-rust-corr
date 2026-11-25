@@ -1,14 +1,23 @@
 [package]
-name = "mincorrpy"
-version = "0.2.1"
-edition = "2024"
-license = "GPL-2.0-or-later"
+name = "mincorr-py"
+description = "Python bindings for mincorr"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+publish = false
 
 [lib]
-crate-type = ["cdylib"]
+name = "_core"
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-mincorr = { path = "../core" }
-ndarray = "0.17.1"
-numpy = "0.27.1"
-pyo3 = { version = "0.27.2", features = ["extension-module"] }
+mincorr.workspace = true
+ndarray.workspace = true
+numpy.workspace = true
+pyo3 = { workspace = true, features = ["extension-module"] }
+
+[lints]
+workspace = true

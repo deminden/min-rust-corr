@@ -45,3 +45,9 @@ Thumbs.db
 # Test fixtures and tool inputs are tracked
 !crates/core/tests/fixtures/**
 !crates/cli/tests/data/**
+
+# Python build artefacts
+__pycache__/
+*.so
+*.egg-info/
+.pytest_cache/
