@@ -1,6 +1,5 @@
 # Rust
 /target
-Cargo.lock
 
 # Data files
 *.gz
@@ -42,3 +41,7 @@ Thumbs.db
 
 # R
 /r_libs
+
+# Test fixtures and tool inputs are tracked
+!crates/core/tests/fixtures/**
+!crates/cli/tests/data/**

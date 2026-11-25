@@ -1,0 +1,9 @@
+{
+  "generator": "tools/make_fixtures.R",
+  "seed": 20261124,
+  "r_version": "R version 4.3.3 (2024-02-29)",
+  "WGCNA": null,
+  "HellCor": null,
+  "datasets": ["normal_30x40", "normal_8x200", "lognormal_20x77", "ties_15x30", "outliers_15x50", "constant_rows_6x20", "na_12x40", "tiny_5x3", "tiny_5x4", "monotone_pairs"],
+  "skipped": ["bicor (WGCNA not installed)", "hellcor (HellCor not installed)"]
+}
