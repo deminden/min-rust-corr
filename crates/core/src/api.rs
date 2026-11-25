@@ -59,6 +59,11 @@ impl Correlator {
         &self.method
     }
 
+    /// The configured p-value mode.
+    pub fn pvalue_spec(&self) -> PvalueSpec {
+        self.pvalues
+    }
+
     /// Full symmetric matrix of all row pairs of `data` (rows = variables).
     pub fn full(&self, data: ArrayView2<'_, f64>) -> Result<CorrOutput> {
         self.run(data, None, exec::Full)

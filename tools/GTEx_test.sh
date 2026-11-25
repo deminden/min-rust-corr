@@ -2,7 +2,7 @@
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-repo_root="$(cd "$script_dir/../.." && pwd)"
+repo_root="$(cd "$script_dir/.." && pwd)"
 
 # Generate normalized bladder tissue data without VST file
 Rscript "$repo_root/examples/normalised_and_vst_counts_in_tissues.R" keyword=Bladder vst=FALSE
@@ -13,7 +13,7 @@ echo "Sampling 500 random genes for testing..."
 bladder_file="$repo_root/data/Normalised_counts_tissues/Bladder_normalised_counts.tsv.gz"
 filename=$(basename "$bladder_file" .tsv.gz)
 output_file="$repo_root/data/${filename}_500.tsv.gz"
-python - <<'PY'
+python3 - "$bladder_file" "$output_file" <<'PY'
 import gzip
 import random
 import sys
@@ -35,20 +35,19 @@ with gzip.open(output_file, "wt") as out:
     out.write(header)
     out.writelines(sampled)
 PY
-"$bladder_file" "$output_file"
 echo "Created: $output_file"
 
 # Run all correlation types using Rust code
 echo "Running Rust correlations on $output_file..."
 
-cargo run -p mincorr_cli --release --manifest-path "$repo_root/Cargo.toml" -- "$output_file" pearson --time
-cargo run -p mincorr_cli --release --manifest-path "$repo_root/Cargo.toml" -- "$output_file" spearman --time
-cargo run -p mincorr_cli --release --manifest-path "$repo_root/Cargo.toml" -- "$output_file" kendall --time
-cargo run -p mincorr_cli --release --manifest-path "$repo_root/Cargo.toml" -- "$output_file" bicor --time
-cargo run -p mincorr_cli --release --manifest-path "$repo_root/Cargo.toml" -- "$output_file" hellcor --time
+cargo run -p mincorr-cli --bin mincorr --release --manifest-path "$repo_root/Cargo.toml" -- "$output_file" pearson --time --legacy-tar
+cargo run -p mincorr-cli --bin mincorr --release --manifest-path "$repo_root/Cargo.toml" -- "$output_file" spearman --time --legacy-tar
+cargo run -p mincorr-cli --bin mincorr --release --manifest-path "$repo_root/Cargo.toml" -- "$output_file" kendall --time --legacy-tar
+cargo run -p mincorr-cli --bin mincorr --release --manifest-path "$repo_root/Cargo.toml" -- "$output_file" bicor --time --legacy-tar
+cargo run -p mincorr-cli --bin mincorr --release --manifest-path "$repo_root/Cargo.toml" -- "$output_file" hellcor --time --legacy-tar
 
 # Run investigation script to compare results
 echo "Running R comparison analysis..."
-Rscript "$script_dir/investigate_diffs.R" "$output_file"
+Rscript "$repo_root/crates/core/tests/investigate_diffs.R" "$output_file"
 
 echo "All correlation tests completed!"

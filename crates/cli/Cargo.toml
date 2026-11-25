@@ -1,20 +1,36 @@
 [package]
 name = "mincorr-cli"
-version = "0.2.1"
-edition = "2024"
-license = "GPL-2.0-or-later"
+description = "Command-line interface for mincorr correlation matrices"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "mincorr"
+path = "src/main.rs"
 
 [[bin]]
 name = "mincorr-cli"
-path = "src/main.rs"
+path = "src/alias.rs"
 
 [dependencies]
-csv = "1.4.0"
-flate2 = "1.1.5"
-mincorr = { path = "../core" }
-ndarray = "0.17.1"
-rayon = "1.11.0"
-rand = "0.8.5"
-strum = "0.27.2"
-strum_macros = "0.27.2"
-tar = "0.4.44"
+mincorr.workspace = true
+ndarray.workspace = true
+rayon.workspace = true
+rand_chacha.workspace = true
+clap.workspace = true
+flate2.workspace = true
+tar.workspace = true
+anyhow.workspace = true
+ryu.workspace = true
+
+[dev-dependencies]
+assert_cmd.workspace = true
+predicates.workspace = true
+tempfile.workspace = true
+
+[lints]
+workspace = true

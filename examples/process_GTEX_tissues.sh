@@ -38,9 +38,9 @@ for vst_file in ../data/Normalised_counts_tissues_vst/*${KEYWORD}*_vst_counts.ts
         
         # Run Pearson correlation on VST data
         if [ -n "$THREADS" ]; then
-            cargo run --release -- "$vst_file" pearson $THREADS --time
+            cargo run -p mincorr-cli --bin mincorr --release -- "$vst_file" pearson $THREADS --time --legacy-tar
         else
-            cargo run --release -- "$vst_file" pearson --time
+            cargo run -p mincorr-cli --bin mincorr --release -- "$vst_file" pearson --time --legacy-tar
         fi
         
         # Move output to outputs folder
@@ -56,11 +56,11 @@ for norm_file in ../data/Normalised_counts_tissues/*${KEYWORD}*_normalised_count
         
         # Run Spearman correlation on normalized data
         if [ -n "$THREADS" ]; then
-            cargo run --release -- "$norm_file" spearman $THREADS --time
-            cargo run --release -- "$norm_file" kendall $THREADS --time
+            cargo run -p mincorr-cli --bin mincorr --release -- "$norm_file" spearman $THREADS --time --legacy-tar
+            cargo run -p mincorr-cli --bin mincorr --release -- "$norm_file" kendall $THREADS --time --legacy-tar
         else
-            cargo run --release -- "$norm_file" spearman --time
-            cargo run --release -- "$norm_file" kendall --time
+            cargo run -p mincorr-cli --bin mincorr --release -- "$norm_file" spearman --time --legacy-tar
+            cargo run -p mincorr-cli --bin mincorr --release -- "$norm_file" kendall --time --legacy-tar
         fi
         
         # Move outputs to outputs folder
