@@ -29,7 +29,7 @@ fn cmd(dir: &Path) -> Command {
 fn read_tsv(path: &Path) -> (Vec<String>, Vec<Vec<f64>>) {
     let mut s = String::new();
     if path.extension().is_some_and(|e| e == "gz") {
-        GzDecoder::new(std::fs::File::open(path).unwrap()).read_to_string(&mut s).unwrap();
+        flate2::read::MultiGzDecoder::new(std::fs::File::open(path).unwrap()).read_to_string(&mut s).unwrap();
     } else {
         s = std::fs::read_to_string(path).unwrap();
     }
