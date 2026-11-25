@@ -45,11 +45,8 @@ fn layouts_agree() {
             for j in 0..n {
                 let (f, g) = (full.corr[[i, j]], cross.corr[[i, j]]);
                 if i != j {
-                    assert!(
-                        f.to_bits() == g.to_bits() || (f.is_nan() && g.is_nan()),
-                        "{} cross({i},{j})",
-                        m.name()
-                    );
+                    let ok = f.to_bits() == g.to_bits() || (f.is_nan() && g.is_nan());
+                    assert!(ok, "{} cross({i},{j}): {f} vs {g}", m.name());
                 }
                 assert!(f.to_bits() == full.corr[[j, i]].to_bits() || f.is_nan(), "{} symmetry", m.name());
             }

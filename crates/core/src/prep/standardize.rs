@@ -25,13 +25,22 @@ pub fn center_unit_norm(x: &[f64], out: &mut [f64]) -> RowStatus {
 }
 
 /// Scale `v` in place to unit Euclidean norm. `ok` = false forces the
-/// degenerate outcome.
+/// degenerate outcome. The vector is first divided by its largest absolute
+/// value so that neither overflow nor subnormal underflow can distort the
+/// norm (as in LAPACK's `dnrm2`).
 pub fn scale_unit_norm(v: &mut [f64], ok: bool) -> RowStatus {
-    let norm = v.iter().map(|a| a * a).sum::<f64>().sqrt();
-    if !ok || !(norm > 0.0 && norm.is_finite()) {
+    let big = v.iter().fold(0.0f64, |m, a| m.max(a.abs()));
+    if !ok || !(big > 0.0 && big.is_finite()) {
         v.fill(0.0);
         return RowStatus::Degenerate;
     }
+    let inv_big = 1.0 / big;
+    if inv_big.is_finite() {
+        v.iter_mut().for_each(|a| *a *= inv_big);
+    } else {
+        v.iter_mut().for_each(|a| *a /= big);
+    }
+    let norm = v.iter().map(|a| a * a).sum::<f64>().sqrt();
     let inv = 1.0 / norm;
     v.iter_mut().for_each(|a| *a *= inv);
     RowStatus::Ok

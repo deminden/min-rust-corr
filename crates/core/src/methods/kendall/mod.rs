@@ -4,6 +4,7 @@
 //! approximation without continuity correction (equal to R's
 //! `cor.test(method = "kendall", exact = FALSE)`).
 
+pub mod bitset;
 pub mod knight;
 pub mod variance;
 
@@ -12,6 +13,7 @@ use crate::error::Result;
 use crate::options::PvalueSpec;
 use crate::prep::rank::{TieSums, dense_ranks};
 use crate::prep::standardize::all_equal;
+use bitset::SignBits;
 use knight::{KnightScratch, kendall_s};
 
 /// Kendall tau-b kernel.
@@ -24,6 +26,7 @@ pub struct KendallRow {
     perm: Vec<u32>,
     ranks: Vec<u32>,
     ties: TieSums,
+    bits: Option<SignBits>,
 }
 
 impl KendallRow {
@@ -50,7 +53,10 @@ pub struct KendallScratch {
 
 fn tau_b(a: &KendallRow, b: &KendallRow, s: &mut KnightScratch) -> PairStat {
     let n = a.ranks.len();
-    let sv = kendall_s(&a.perm, &a.ranks, &b.ranks, a.ties.pairs, b.ties.pairs, s);
+    let sv = match (&a.bits, &b.bits) {
+        (Some(x), Some(y)) => x.s(y),
+        _ => kendall_s(&a.perm, &a.ranks, &b.ranks, a.ties.pairs, b.ties.pairs, s),
+    };
     let n0 = (n as u64) * (n as u64 - 1) / 2;
     let den = ((n0 - a.ties.pairs) as f64 * (n0 - b.ties.pairs) as f64).sqrt();
     let value = if den > 0.0 { sv as f64 / den } else { f64::NAN };
@@ -72,7 +78,13 @@ impl PairKernel for Kendall {
 
     fn prepare(&self, x: &[f64], _: &(), s: &mut KendallScratch) -> Option<KendallRow> {
         let mut r = KendallRow::default();
-        r.fill(x, &mut s.counts).then_some(r)
+        if !r.fill(x, &mut s.counts) {
+            return None;
+        }
+        if x.len() <= bitset::MAX_N {
+            r.bits = Some(SignBits::new(&r.ranks));
+        }
+        Some(r)
     }
 
     fn eval(&self, a: &KendallRow, b: &KendallRow, _: &(), s: &mut KendallScratch) -> PairStat {

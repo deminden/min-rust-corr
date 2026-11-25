@@ -139,11 +139,25 @@ pub struct HellcorParams {
     pub lmax: usize,
     /// Fixed orders (K, L) that skip cross-validated selection.
     pub fixed_orders: Option<(usize, usize)>,
+    /// Cross-validation criterion used to select (K, L).
+    pub criterion: HellcorCriterion,
+}
+
+/// Cross-validation criterion for the Hellinger correlation orders.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum HellcorCriterion {
+    /// Minimise the leave-one-out MISE estimate A²(K,L) − 2B(K,L)
+    /// (Geenens & Lafaye de Micheaux 2022, Appendix C). Default.
+    #[default]
+    Mise,
+    /// Maximise Σᵢ Rᵢ·⟨β⁽⁻ⁱ⁾, φᵢ⟩ / ‖β⁽⁻ⁱ⁾‖ (normalised leave-one-out
+    /// variant described in the rewrite specification).
+    NormalizedLoo,
 }
 
 impl Default for HellcorParams {
     fn default() -> Self {
-        Self { alpha: 6.0, kmax: 20, lmax: 20, fixed_orders: None }
+        Self { alpha: 6.0, kmax: 20, lmax: 20, fixed_orders: None, criterion: HellcorCriterion::Mise }
     }
 }
 

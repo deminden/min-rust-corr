@@ -25,4 +25,6 @@ pub use api::Correlator;
 pub use compat::{bicor, hellcor, hellcor_pair, kendall, pearson, spearman};
 pub use error::{CorrError, Result};
 pub use layout::{CorrOutput, PackedOutput, PairResult, RowBlock, packed_index, packed_len};
-pub use options::{BicorParams, HellcorParams, MadZeroFallback, Method, NanPolicy, PvalueSpec};
+pub use options::{
+    BicorParams, HellcorCriterion, HellcorParams, MadZeroFallback, Method, NanPolicy, PvalueSpec,
+};

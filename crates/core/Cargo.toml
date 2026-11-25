@@ -23,7 +23,6 @@ blas = ["ndarray/blas"]
 ndarray = { workspace = true, features = ["rayon"] }
 rayon.workspace = true
 thiserror.workspace = true
-rand.workspace = true
 rand_chacha.workspace = true
 
 [dev-dependencies]

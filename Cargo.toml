@@ -42,6 +42,8 @@ panic = "deny"
 neg_cmp_op_on_partial_ord = "allow"
 # Published constants are kept verbatim.
 excessive_precision = "allow"
+# Index loops read more clearly in the numerical kernels.
+needless_range_loop = "allow"
 
 [profile.release]
 lto = "thin"
