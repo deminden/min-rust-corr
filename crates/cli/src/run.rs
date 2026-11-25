@@ -9,7 +9,7 @@ use crate::subset::{Selector, apply};
 use crate::timing::Reporter;
 use anyhow::{Result, bail};
 use mincorr::{BicorParams, Correlator, HellcorParams, Method, NanPolicy, PvalueSpec, RowBlock};
-use ndarray::{Array2, Axis, CowArray, Ix2};
+use ndarray::{Array2, ArrayView2, Axis, CowArray, Ix2};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -89,30 +89,44 @@ pub fn run(cli: Cli) -> Result<()> {
         if with_p { " with p-values" } else { "" }
     ));
     let a = select(&m.data, &ia);
-    if cross {
-        let b = select(&m.data, &ib);
-        let overlap = overlaps(&rows_a, &cols);
-        let mut scratch = (Vec::new(), Vec::new());
-        corr.cross_blocks(a.view(), b.view(), |blk| emit(&mut *sink, &blk, &overlap, &mut scratch))?;
-    } else if fits_in_memory(&corr, a.nrows(), with_p, cli.output.memory_limit_gb) {
-        let out = corr.full(a.view())?;
-        let n = a.nrows();
-        let br = cli.output.block_rows.unwrap_or(256).max(1);
-        for s in (0..n).step_by(br) {
-            let e = (s + br).min(n);
-            let pv = out.pvalues.as_ref().and_then(|p| p.as_slice()).map(|p| &p[s * n..e * n]);
-            let c = out.corr.as_slice().map(|c| &c[s * n..e * n]).unwrap_or(&[]);
-            sink.block(&RowBlock { rows: s..e, n_cols: n, corr: c, pvalues: pv }).map_err(sink_err)?;
-        }
-    } else {
-        corr.full_blocks(a.view(), |blk| sink.block(&blk).map_err(sink_err))?;
-    }
+    let b = cross.then(|| select(&m.data, &ib));
+    let overlap = if cross { overlaps(&rows_a, &cols) } else { HashMap::new() };
+    stream(&corr, &cli, a.view(), b.as_ref().map(|b| b.view()), &overlap, &mut *sink, with_p)?;
     rep.phase("Correlation + output:");
     sink.finish()?;
     for f in sinks::finalize(&plan)? {
         rep.say(format!("Wrote {}", f.display()));
     }
     rep.summary();
+    Ok(())
+}
+
+/// Compute and feed blocks to the sink.
+fn stream(
+    corr: &Correlator,
+    cli: &Cli,
+    a: ArrayView2<'_, f64>,
+    b: Option<ArrayView2<'_, f64>>,
+    overlap: &HashMap<usize, usize>,
+    sink: &mut dyn Sink,
+    with_p: bool,
+) -> Result<()> {
+    if let Some(b) = b {
+        let mut scratch = (Vec::new(), Vec::new());
+        corr.cross_blocks(a, b, |blk| emit(sink, &blk, overlap, &mut scratch))?;
+    } else if fits_in_memory(corr, a.nrows(), with_p, cli.output.memory_limit_gb) {
+        let out = corr.full(a)?;
+        let n = a.nrows();
+        let br = cli.output.block_rows.unwrap_or(256).max(1);
+        for s in (0..n).step_by(br) {
+            let e = (s + br).min(n);
+            let pv = out.pvalues.as_ref().and_then(|p| p.as_slice()).map(|p| &p[s * n..e * n]);
+            let c = out.corr.as_slice().map(|c| &c[s * n..e * n]).unwrap_or(&[]);
+            sink.block(&RowBlock { rows: s..e, n_cols: n, corr: c, pvalues: pv })?;
+        }
+    } else {
+        corr.full_blocks(a, |blk| sink.block(&blk).map_err(sink_err))?;
+    }
     Ok(())
 }
 

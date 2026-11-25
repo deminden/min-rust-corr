@@ -11,10 +11,12 @@ license.workspace = true
 [[bin]]
 name = "mincorr"
 path = "src/main.rs"
+doc = false
 
 [[bin]]
 name = "mincorr-cli"
 path = "src/alias.rs"
+doc = false
 
 [dependencies]
 mincorr.workspace = true

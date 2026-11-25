@@ -2,7 +2,7 @@
 
 use super::coeffs::{Mat, PairData, loo_beta};
 
-/// In-place 2-D prefix sum: P[K][L] = Σ_{k≤K, l≤L} X[k][l].
+/// In-place 2-D prefix sum: `P(K, L) = Σ_{k≤K, l≤L} X(k, l)`.
 pub fn prefix2d(x: &mut [f64], k1: usize, l1: usize) {
     for k in 0..k1 {
         for l in 1..l1 {
@@ -33,7 +33,7 @@ pub fn best(table: &[f64], k1: usize, l1: usize, better: impl Fn(f64, f64) -> bo
     (arg.0.max(1).min(k1 - 1), arg.1.max(1).min(l1 - 1))
 }
 
-/// Normalised leave-one-out table T[K][L] = Σ_i R_i ⟨β⁽⁻ⁱ⁾, φ_i⟩_{K,L} / ‖β⁽⁻ⁱ⁾‖_{K,L}.
+/// Normalised leave-one-out table `T(K, L)` = Σ_i R_i ⟨β⁽⁻ⁱ⁾, φ_i⟩_{K,L} / ‖β⁽⁻ⁱ⁾‖_{K,L}.
 pub struct NormalizedWork {
     /// β⁽⁻ⁱ⁾ buffer.
     pub beta: Mat,
