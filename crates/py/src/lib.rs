@@ -13,10 +13,7 @@ fn pair_matrix_from_slices(x: &[f64], y: &[f64]) -> Array2<f64> {
     Array2::from_shape_vec((2, n), flat).expect("pair matrix shape mismatch")
 }
 
-fn owned_pair(
-    x: PyReadonlyArray1<'_, f64>,
-    y: PyReadonlyArray1<'_, f64>,
-) -> PyResult<(Vec<f64>, Vec<f64>)> {
+fn owned_pair(x: PyReadonlyArray1<'_, f64>, y: PyReadonlyArray1<'_, f64>) -> PyResult<(Vec<f64>, Vec<f64>)> {
     let x_owned = x.as_array().to_owned();
     let y_owned = y.as_array().to_owned();
 
@@ -30,10 +27,7 @@ fn owned_pair(
     Ok((x_slice.to_vec(), y_slice.to_vec()))
 }
 
-fn ensure_same_ncols(
-    a: &ndarray::ArrayView2<'_, f64>,
-    b: &ndarray::ArrayView2<'_, f64>,
-) -> PyResult<()> {
+fn ensure_same_ncols(a: &ndarray::ArrayView2<'_, f64>, b: &ndarray::ArrayView2<'_, f64>) -> PyResult<()> {
     if a.ncols() != b.ncols() {
         return Err(PyValueError::new_err(
             "data_a and data_b must have the same number of columns (samples)",
@@ -55,11 +49,7 @@ fn hellcor_pair(
 }
 
 #[pyfunction]
-fn pearson_pair(
-    py: Python<'_>,
-    x: PyReadonlyArray1<'_, f64>,
-    y: PyReadonlyArray1<'_, f64>,
-) -> PyResult<f64> {
+fn pearson_pair(py: Python<'_>, x: PyReadonlyArray1<'_, f64>, y: PyReadonlyArray1<'_, f64>) -> PyResult<f64> {
     let (x_vals, y_vals) = owned_pair(x, y)?;
     let data = pair_matrix_from_slices(&x_vals, &y_vals);
     let corr = py.detach(|| mincorr_core::pearson::correlation_matrix(&data));
@@ -79,11 +69,7 @@ fn spearman_pair(
 }
 
 #[pyfunction]
-fn kendall_pair(
-    py: Python<'_>,
-    x: PyReadonlyArray1<'_, f64>,
-    y: PyReadonlyArray1<'_, f64>,
-) -> PyResult<f64> {
+fn kendall_pair(py: Python<'_>, x: PyReadonlyArray1<'_, f64>, y: PyReadonlyArray1<'_, f64>) -> PyResult<f64> {
     let (x_vals, y_vals) = owned_pair(x, y)?;
     let data = pair_matrix_from_slices(&x_vals, &y_vals);
     let corr = py.detach(|| mincorr_core::kendall::correlation_matrix(&data));
@@ -91,11 +77,7 @@ fn kendall_pair(
 }
 
 #[pyfunction]
-fn bicor_pair(
-    py: Python<'_>,
-    x: PyReadonlyArray1<'_, f64>,
-    y: PyReadonlyArray1<'_, f64>,
-) -> PyResult<f64> {
+fn bicor_pair(py: Python<'_>, x: PyReadonlyArray1<'_, f64>, y: PyReadonlyArray1<'_, f64>) -> PyResult<f64> {
     let _ = py;
     Err(pyo3::exceptions::PyNotImplementedError::new_err("not yet implemented on the mit-rewrite branch"))
 }
@@ -147,8 +129,7 @@ fn pearson_cross_matrix(
     let data_a_view = data_a.as_array();
     let data_b_view = data_b.as_array();
     ensure_same_ncols(&data_a_view, &data_b_view)?;
-    let corr =
-        py.detach(|| mincorr_core::pearson::correlation_cross_matrix(&data_a_view, &data_b_view));
+    let corr = py.detach(|| mincorr_core::pearson::correlation_cross_matrix(&data_a_view, &data_b_view));
     Ok(corr.into_pyarray(py).into())
 }
 
@@ -161,8 +142,7 @@ fn spearman_cross_matrix(
     let data_a_view = data_a.as_array();
     let data_b_view = data_b.as_array();
     ensure_same_ncols(&data_a_view, &data_b_view)?;
-    let corr =
-        py.detach(|| mincorr_core::spearman::correlation_cross_matrix(&data_a_view, &data_b_view));
+    let corr = py.detach(|| mincorr_core::spearman::correlation_cross_matrix(&data_a_view, &data_b_view));
     Ok(corr.into_pyarray(py).into())
 }
 
@@ -175,8 +155,7 @@ fn kendall_cross_matrix(
     let data_a_view = data_a.as_array();
     let data_b_view = data_b.as_array();
     ensure_same_ncols(&data_a_view, &data_b_view)?;
-    let corr =
-        py.detach(|| mincorr_core::kendall::correlation_cross_matrix(&data_a_view, &data_b_view));
+    let corr = py.detach(|| mincorr_core::kendall::correlation_cross_matrix(&data_a_view, &data_b_view));
     Ok(corr.into_pyarray(py).into())
 }
 
@@ -208,8 +187,7 @@ fn pearson_matrix_with_pvalues(
     data: PyReadonlyArray2<'_, f64>,
 ) -> PyResult<(Py<PyArray2<f64>>, Py<PyArray2<f64>>)> {
     let data_view = data.as_array();
-    let (corr, pvals) =
-        py.detach(|| mincorr_core::pearson::correlation_matrix_with_pvalues(&data_view));
+    let (corr, pvals) = py.detach(|| mincorr_core::pearson::correlation_matrix_with_pvalues(&data_view));
     Ok((corr.into_pyarray(py).into(), pvals.into_pyarray(py).into()))
 }
 
@@ -219,8 +197,7 @@ fn spearman_matrix_with_pvalues(
     data: PyReadonlyArray2<'_, f64>,
 ) -> PyResult<(Py<PyArray2<f64>>, Py<PyArray2<f64>>)> {
     let data_view = data.as_array();
-    let (corr, pvals) =
-        py.detach(|| mincorr_core::spearman::correlation_matrix_with_pvalues(&data_view));
+    let (corr, pvals) = py.detach(|| mincorr_core::spearman::correlation_matrix_with_pvalues(&data_view));
     Ok((corr.into_pyarray(py).into(), pvals.into_pyarray(py).into()))
 }
 
@@ -230,8 +207,7 @@ fn kendall_matrix_with_pvalues(
     data: PyReadonlyArray2<'_, f64>,
 ) -> PyResult<(Py<PyArray2<f64>>, Py<PyArray2<f64>>)> {
     let data_view = data.as_array();
-    let (corr, pvals) =
-        py.detach(|| mincorr_core::kendall::correlation_matrix_with_pvalues(&data_view));
+    let (corr, pvals) = py.detach(|| mincorr_core::kendall::correlation_matrix_with_pvalues(&data_view));
     Ok((corr.into_pyarray(py).into(), pvals.into_pyarray(py).into()))
 }
 
@@ -266,9 +242,8 @@ fn pearson_cross_matrix_with_pvalues(
     let data_a_view = data_a.as_array();
     let data_b_view = data_b.as_array();
     ensure_same_ncols(&data_a_view, &data_b_view)?;
-    let (corr, pvals) = py.detach(|| {
-        mincorr_core::pearson::correlation_cross_matrix_with_pvalues(&data_a_view, &data_b_view)
-    });
+    let (corr, pvals) = py
+        .detach(|| mincorr_core::pearson::correlation_cross_matrix_with_pvalues(&data_a_view, &data_b_view));
     Ok((corr.into_pyarray(py).into(), pvals.into_pyarray(py).into()))
 }
 
@@ -281,9 +256,8 @@ fn spearman_cross_matrix_with_pvalues(
     let data_a_view = data_a.as_array();
     let data_b_view = data_b.as_array();
     ensure_same_ncols(&data_a_view, &data_b_view)?;
-    let (corr, pvals) = py.detach(|| {
-        mincorr_core::spearman::correlation_cross_matrix_with_pvalues(&data_a_view, &data_b_view)
-    });
+    let (corr, pvals) = py
+        .detach(|| mincorr_core::spearman::correlation_cross_matrix_with_pvalues(&data_a_view, &data_b_view));
     Ok((corr.into_pyarray(py).into(), pvals.into_pyarray(py).into()))
 }
 
@@ -296,9 +270,8 @@ fn kendall_cross_matrix_with_pvalues(
     let data_a_view = data_a.as_array();
     let data_b_view = data_b.as_array();
     ensure_same_ncols(&data_a_view, &data_b_view)?;
-    let (corr, pvals) = py.detach(|| {
-        mincorr_core::kendall::correlation_cross_matrix_with_pvalues(&data_a_view, &data_b_view)
-    });
+    let (corr, pvals) = py
+        .detach(|| mincorr_core::kendall::correlation_cross_matrix_with_pvalues(&data_a_view, &data_b_view));
     Ok((corr.into_pyarray(py).into(), pvals.into_pyarray(py).into()))
 }
 
@@ -327,40 +300,28 @@ fn hellcor_cross_matrix_with_pvalues(
 }
 
 #[pyfunction]
-fn pearson_upper_triangle(
-    py: Python<'_>,
-    data: PyReadonlyArray2<'_, f64>,
-) -> PyResult<Py<PyArray1<f64>>> {
+fn pearson_upper_triangle(py: Python<'_>, data: PyReadonlyArray2<'_, f64>) -> PyResult<Py<PyArray1<f64>>> {
     let data_view = data.as_array();
     let corr = py.detach(|| mincorr_core::pearson::correlation_upper_triangle(&data_view));
     Ok(corr.into_pyarray(py).into())
 }
 
 #[pyfunction]
-fn spearman_upper_triangle(
-    py: Python<'_>,
-    data: PyReadonlyArray2<'_, f64>,
-) -> PyResult<Py<PyArray1<f64>>> {
+fn spearman_upper_triangle(py: Python<'_>, data: PyReadonlyArray2<'_, f64>) -> PyResult<Py<PyArray1<f64>>> {
     let data_view = data.as_array();
     let corr = py.detach(|| mincorr_core::spearman::correlation_upper_triangle(&data_view));
     Ok(corr.into_pyarray(py).into())
 }
 
 #[pyfunction]
-fn kendall_upper_triangle(
-    py: Python<'_>,
-    data: PyReadonlyArray2<'_, f64>,
-) -> PyResult<Py<PyArray1<f64>>> {
+fn kendall_upper_triangle(py: Python<'_>, data: PyReadonlyArray2<'_, f64>) -> PyResult<Py<PyArray1<f64>>> {
     let data_view = data.as_array();
     let corr = py.detach(|| mincorr_core::kendall::correlation_upper_triangle(&data_view));
     Ok(corr.into_pyarray(py).into())
 }
 
 #[pyfunction]
-fn bicor_upper_triangle(
-    py: Python<'_>,
-    data: PyReadonlyArray2<'_, f64>,
-) -> PyResult<Py<PyArray1<f64>>> {
+fn bicor_upper_triangle(py: Python<'_>, data: PyReadonlyArray2<'_, f64>) -> PyResult<Py<PyArray1<f64>>> {
     let _ = py;
     Err(pyo3::exceptions::PyNotImplementedError::new_err("not yet implemented on the mit-rewrite branch"))
 }

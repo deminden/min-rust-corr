@@ -1,15 +1,39 @@
 [package]
 name = "mincorr"
-version = "0.2.1"
-edition = "2024"
-license = "GPL-2.0-or-later"
+description = "Fast correlation matrices: Pearson, Spearman, Kendall tau-b, biweight midcorrelation and Hellinger correlation"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+readme = "../../README.md"
+keywords = ["correlation", "statistics", "kendall", "spearman", "bicor"]
+categories = ["science", "mathematics"]
 
 [lib]
 path = "src/lib.rs"
 
+[features]
+default = []
+## Link a system BLAS through ndarray for the Gram (matrix-product) kernel.
+blas = ["ndarray/blas"]
+
 [dependencies]
-kendalls = "1.0.0"
-ndarray = { version = "0.17.1", features = ["rayon"] }
-rayon = "1.11.0"
-rand = "0.8.5"
-statrs = "0.18.0"
+ndarray = { workspace = true, features = ["rayon"] }
+rayon.workspace = true
+thiserror.workspace = true
+rand.workspace = true
+rand_chacha.workspace = true
+
+[dev-dependencies]
+rayon.workspace = true
+proptest.workspace = true
+criterion.workspace = true
+
+[[bench]]
+name = "methods"
+harness = false
+
+[lints]
+workspace = true

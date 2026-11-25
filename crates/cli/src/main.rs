@@ -103,9 +103,7 @@ fn matrix_to_tsv_bytes(
         wtr.write_record(std::iter::once("").chain(col_ids.iter().map(String::as_str)))?;
         for (i, row_id) in row_ids.iter().enumerate() {
             let row_vals: Vec<String> = matrix.row(i).iter().map(|&r| r.to_string()).collect();
-            wtr.write_record(
-                std::iter::once(row_id.as_str()).chain(row_vals.iter().map(String::as_str)),
-            )?;
+            wtr.write_record(std::iter::once(row_id.as_str()).chain(row_vals.iter().map(String::as_str)))?;
         }
         wtr.flush()?;
     }
@@ -116,10 +114,7 @@ fn matrix_to_tsv_bytes(
 
 fn read_matrix_data<R: Read>(reader: R) -> Result<HashMap<String, Array1<f64>>, Box<dyn Error>> {
     let mut row_data = HashMap::new();
-    let mut rdr = ReaderBuilder::new()
-        .delimiter(b'\t')
-        .has_headers(true)
-        .from_reader(reader);
+    let mut rdr = ReaderBuilder::new().delimiter(b'\t').has_headers(true).from_reader(reader);
 
     // File should contain at least two columns (row ID + ≥2 samples)
     let header_len = rdr.headers()?.len();
@@ -133,28 +128,15 @@ fn read_matrix_data<R: Read>(reader: R) -> Result<HashMap<String, Array1<f64>>, 
         // Validate row ID field
         let raw_row_id = record.get(0).unwrap_or("").trim();
         if raw_row_id.is_empty() {
-            return Err(format!(
-                "Empty row ID encountered on line {}",
-                idx + 2 /* header offset */
-            )
-            .into());
+            return Err(format!("Empty row ID encountered on line {}", idx + 2 /* header offset */).into());
         }
 
         if row_data.contains_key(raw_row_id) {
-            return Err(format!(
-                "Duplicate row ID '{}' encountered on line {}",
-                raw_row_id,
-                idx + 2
-            )
-            .into());
+            return Err(format!("Duplicate row ID '{}' encountered on line {}", raw_row_id, idx + 2).into());
         }
 
-        let expression_values: Array1<f64> = record
-            .iter()
-            .skip(1)
-            .map(|s| s.parse().unwrap_or(f64::NAN))
-            .collect::<Vec<_>>()
-            .into();
+        let expression_values: Array1<f64> =
+            record.iter().skip(1).map(|s| s.parse().unwrap_or(f64::NAN)).collect::<Vec<_>>().into();
 
         row_data.insert(raw_row_id.to_string(), expression_values);
     }
@@ -252,22 +234,12 @@ fn parse_args() -> Result<
         } else if arg == "--subset-a-rows" {
             let value = args.get(i + 1).ok_or("Missing value for --subset-a-rows")?;
             subset_a.rows = Some(
-                value
-                    .split(',')
-                    .map(str::trim)
-                    .filter(|x| !x.is_empty())
-                    .map(ToString::to_string)
-                    .collect(),
+                value.split(',').map(str::trim).filter(|x| !x.is_empty()).map(ToString::to_string).collect(),
             );
             i += 2;
         } else if let Some(value) = arg.strip_prefix("--subset-a-rows=") {
             subset_a.rows = Some(
-                value
-                    .split(',')
-                    .map(str::trim)
-                    .filter(|x| !x.is_empty())
-                    .map(ToString::to_string)
-                    .collect(),
+                value.split(',').map(str::trim).filter(|x| !x.is_empty()).map(ToString::to_string).collect(),
             );
             i += 1;
         } else if arg == "--subset-b-size" {
@@ -294,22 +266,12 @@ fn parse_args() -> Result<
         } else if arg == "--subset-b-rows" {
             let value = args.get(i + 1).ok_or("Missing value for --subset-b-rows")?;
             subset_b.rows = Some(
-                value
-                    .split(',')
-                    .map(str::trim)
-                    .filter(|x| !x.is_empty())
-                    .map(ToString::to_string)
-                    .collect(),
+                value.split(',').map(str::trim).filter(|x| !x.is_empty()).map(ToString::to_string).collect(),
             );
             i += 2;
         } else if let Some(value) = arg.strip_prefix("--subset-b-rows=") {
             subset_b.rows = Some(
-                value
-                    .split(',')
-                    .map(str::trim)
-                    .filter(|x| !x.is_empty())
-                    .map(ToString::to_string)
-                    .collect(),
+                value.split(',').map(str::trim).filter(|x| !x.is_empty()).map(ToString::to_string).collect(),
             );
             i += 1;
         } else if arg == "--subset-size" {
@@ -336,22 +298,12 @@ fn parse_args() -> Result<
         } else if arg == "--subset-rows" {
             let value = args.get(i + 1).ok_or("Missing value for --subset-rows")?;
             subset_a.rows = Some(
-                value
-                    .split(',')
-                    .map(str::trim)
-                    .filter(|x| !x.is_empty())
-                    .map(ToString::to_string)
-                    .collect(),
+                value.split(',').map(str::trim).filter(|x| !x.is_empty()).map(ToString::to_string).collect(),
             );
             i += 2;
         } else if let Some(value) = arg.strip_prefix("--subset-rows=") {
             subset_a.rows = Some(
-                value
-                    .split(',')
-                    .map(str::trim)
-                    .filter(|x| !x.is_empty())
-                    .map(ToString::to_string)
-                    .collect(),
+                value.split(',').map(str::trim).filter(|x| !x.is_empty()).map(ToString::to_string).collect(),
             );
             i += 1;
         } else if let Ok(threads) = arg.parse::<usize>() {
@@ -379,22 +331,15 @@ fn parse_args() -> Result<
 
 fn load_subset_rows_from_file(path: &str) -> Result<Vec<String>, Box<dyn Error>> {
     let content = std::fs::read_to_string(path)?;
-    let rows: Vec<String> = content
-        .lines()
-        .map(str::trim)
-        .filter(|x| !x.is_empty())
-        .map(ToString::to_string)
-        .collect();
+    let rows: Vec<String> =
+        content.lines().map(str::trim).filter(|x| !x.is_empty()).map(ToString::to_string).collect();
     if rows.is_empty() {
         return Err(format!("No row IDs found in subset file: {}", path).into());
     }
     Ok(rows)
 }
 
-fn select_named_rows(
-    all_rows: &[String],
-    requested: &[String],
-) -> Result<Vec<String>, Box<dyn Error>> {
+fn select_named_rows(all_rows: &[String], requested: &[String]) -> Result<Vec<String>, Box<dyn Error>> {
     let available: HashSet<&str> = all_rows.iter().map(String::as_str).collect();
     let mut seen = HashSet::new();
     let mut selected = Vec::new();
@@ -414,18 +359,10 @@ fn select_named_rows(
         }
     }
     if !missing.is_empty() {
-        let sample = missing
-            .iter()
-            .take(10)
-            .cloned()
-            .collect::<Vec<_>>()
-            .join(", ");
-        return Err(format!(
-            "{} requested row IDs not found (first up to 10): {}",
-            missing.len(),
-            sample
-        )
-        .into());
+        let sample = missing.iter().take(10).cloned().collect::<Vec<_>>().join(", ");
+        return Err(
+            format!("{} requested row IDs not found (first up to 10): {}", missing.len(), sample).into()
+        );
     }
     if selected.is_empty() {
         return Err("Subset selection produced zero rows".into());
@@ -452,9 +389,7 @@ fn apply_subset(
         return Ok((row_ids.to_vec(), None));
     }
     if mode_count > 1 {
-        return Err(
-            "Use only one subset mode: --subset-size, --subset-file, or --subset-rows".into(),
-        );
+        return Err("Use only one subset mode: --subset-size, --subset-file, or --subset-rows".into());
     }
 
     if subset.seed.is_some() && subset.size.is_none() {
@@ -466,12 +401,7 @@ fn apply_subset(
             return Err("--subset-size must be greater than 0".into());
         }
         if size > row_ids.len() {
-            return Err(format!(
-                "--subset-size {} exceeds available rows {}",
-                size,
-                row_ids.len()
-            )
-            .into());
+            return Err(format!("--subset-size {} exceeds available rows {}", size, row_ids.len()).into());
         }
         let seed = subset.seed.unwrap_or(42);
         let mut rng = StdRng::seed_from_u64(seed);
@@ -526,11 +456,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // Data loading
-    let load_start = if time_tracking {
-        Some(Instant::now())
-    } else {
-        None
-    };
+    let load_start = if time_tracking { Some(Instant::now()) } else { None };
     let row_data: HashMap<String, Array1<f64>> = if file_path.ends_with(".tar.gz") {
         let file = File::open(&file_path)?;
         let gz = GzDecoder::new(file);
@@ -554,10 +480,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let load_duration = load_start.map(|start| start.elapsed());
 
     if let Some(duration) = load_duration {
-        println!(
-            "Expression data loaded in {:.3} seconds.",
-            duration.as_secs_f64()
-        );
+        println!("Expression data loaded in {:.3} seconds.", duration.as_secs_f64());
     }
 
     let mut all_row_ids: Vec<String> = row_data.keys().cloned().collect();
@@ -576,17 +499,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         match (correlation_type, pvalue_mode) {
             (CorrelationType::Hellcor, PvalueMode::Analytic) => {
                 return Err(
-                    "Analytic p-values are not available for hellcor; use --pvalue-mode mc or auto"
-                        .into(),
+                    "Analytic p-values are not available for hellcor; use --pvalue-mode mc or auto".into()
                 );
             }
             (CorrelationType::Pearson, PvalueMode::Mc)
             | (CorrelationType::Spearman, PvalueMode::Mc)
             | (CorrelationType::Kendall, PvalueMode::Mc)
             | (CorrelationType::Bicor, PvalueMode::Mc) => {
-                return Err(
-                    "Monte Carlo p-values are currently implemented only for hellcor".into(),
-                );
+                return Err("Monte Carlo p-values are currently implemented only for hellcor".into());
             }
             _ => {}
         }
@@ -594,28 +514,17 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let (row_ids_a, subset_tag_a) = apply_subset(&all_row_ids, &subset_cfg_a)?;
     if let Some(tag) = &subset_tag_a {
-        println!(
-            "Applying subset A mode: {} ({} rows selected).",
-            tag,
-            row_ids_a.len()
-        );
+        println!("Applying subset A mode: {} ({} rows selected).", tag, row_ids_a.len());
     }
 
     let use_subset_b = subset_cfg_b.has_any() || subset_vs_all;
     let (row_ids_b, subset_tag_b) = if subset_vs_all {
-        println!(
-            "Applying subset B mode: all rows ({} rows selected).",
-            all_row_ids.len()
-        );
+        println!("Applying subset B mode: all rows ({} rows selected).", all_row_ids.len());
         (all_row_ids.clone(), Some("all".to_string()))
     } else if subset_cfg_b.has_any() {
         let (rows, tag) = apply_subset(&all_row_ids, &subset_cfg_b)?;
         if let Some(tagv) = &tag {
-            println!(
-                "Applying subset B mode: {} ({} rows selected).",
-                tagv,
-                rows.len()
-            );
+            println!("Applying subset B mode: {} ({} rows selected).", tagv, rows.len());
         }
         (rows, tag)
     } else {
@@ -644,18 +553,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let data_matrix_a = build_data_matrix(&row_ids_a, &row_data);
-    let data_matrix_b = if use_subset_b {
-        Some(build_data_matrix(&row_ids_b, &row_data))
-    } else {
-        None
-    };
+    let data_matrix_b = if use_subset_b { Some(build_data_matrix(&row_ids_b, &row_data)) } else { None };
 
     // Correlation calculation
-    let calc_start = if time_tracking {
-        Some(Instant::now())
-    } else {
-        None
-    };
+    let calc_start = if time_tracking { Some(Instant::now()) } else { None };
     let (mut correlation_matrix, mut pvalue_matrix) = match correlation_type {
         CorrelationType::Pearson => {
             println!("Computing Pearson correlations...");
@@ -712,11 +613,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if use_subset_b {
         // Keep exact diagonal semantics for overlapping A/B row IDs.
-        let b_index: HashMap<&str, usize> = row_ids_b
-            .iter()
-            .enumerate()
-            .map(|(i, id)| (id.as_str(), i))
-            .collect();
+        let b_index: HashMap<&str, usize> =
+            row_ids_b.iter().enumerate().map(|(i, id)| (id.as_str(), i)).collect();
         for (i, id) in row_ids_a.iter().enumerate() {
             if let Some(&j) = b_index.get(id.as_str()) {
                 correlation_matrix[[i, j]] = 1.0;
@@ -728,35 +626,19 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let output_row_ids = row_ids_a.clone();
-    let output_col_ids = if use_subset_b {
-        row_ids_b.clone()
-    } else {
-        row_ids_a.clone()
-    };
+    let output_col_ids = if use_subset_b { row_ids_b.clone() } else { row_ids_a.clone() };
 
     let calc_duration = calc_start.map(|start| start.elapsed());
 
     if let Some(duration) = calc_duration {
-        println!(
-            "{} correlations calculated in {:.3} seconds.",
-            correlation_type,
-            duration.as_secs_f64()
-        );
+        println!("{} correlations calculated in {:.3} seconds.", correlation_type, duration.as_secs_f64());
     }
 
     // Output writing
-    let output_start = if time_tracking {
-        Some(Instant::now())
-    } else {
-        None
-    };
+    let output_start = if time_tracking { Some(Instant::now()) } else { None };
     let corr_tsv = matrix_to_tsv_bytes(&output_row_ids, &output_col_ids, &correlation_matrix)?;
     let pval_tsv = if let Some(ref pvals) = pvalue_matrix {
-        Some(matrix_to_tsv_bytes(
-            &output_row_ids,
-            &output_col_ids,
-            pvals,
-        )?)
+        Some(matrix_to_tsv_bytes(&output_row_ids, &output_col_ids, pvals)?)
     } else {
         None
     };
@@ -764,10 +646,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let correlation_suffix = correlation_type.to_string().to_lowercase();
 
     // Extract base filename from input path
-    let input_basename = std::path::Path::new(&file_path)
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or("data");
+    let input_basename =
+        std::path::Path::new(&file_path).file_stem().and_then(|s| s.to_str()).unwrap_or("data");
 
     // Remove .tar if present (for .tar.gz files)
     let input_basename = if input_basename.ends_with(".tar") {
@@ -819,22 +699,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         {
             let total_duration = load_dur + calc_dur + output_dur;
 
-            println!(
-                "Data loading:           {:8.3} seconds",
-                load_dur.as_secs_f64()
-            );
-            println!(
-                "Correlation calculation: {:8.3} seconds",
-                calc_dur.as_secs_f64()
-            );
-            println!(
-                "Output writing:         {:8.3} seconds",
-                output_dur.as_secs_f64()
-            );
-            println!(
-                "Total time:             {:8.3} seconds",
-                total_duration.as_secs_f64()
-            );
+            println!("Data loading:           {:8.3} seconds", load_dur.as_secs_f64());
+            println!("Correlation calculation: {:8.3} seconds", calc_dur.as_secs_f64());
+            println!("Output writing:         {:8.3} seconds", output_dur.as_secs_f64());
+            println!("Total time:             {:8.3} seconds", total_duration.as_secs_f64());
         }
     }
 
