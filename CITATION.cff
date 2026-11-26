@@ -1,11 +1,11 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-title: "mincorr: fast correlation matrices (Pearson, Spearman, Kendall, bicor, Hellinger)"
+title: "mincorr: fast correlation matrices (Pearson, Spearman, Kendall, bicor, Hellinger, partial, Gaussian rank, proportionality, Chatterjee xi, distance correlation)"
 type: software
 authors:
   - family-names: Demin
     given-names: Denis
-version: 0.3.1
+version: 0.4.0
 date-released: "2026-11-26"
 license: MIT
 repository-code: "https://github.com/deminden/min-rust-corr"
@@ -15,6 +15,10 @@ keywords:
   - Kendall tau
   - biweight midcorrelation
   - Hellinger correlation
+  - partial correlation
+  - distance correlation
+  - Chatterjee xi
+  - proportionality
 references:
   - type: article
     authors:
@@ -49,3 +53,77 @@ references:
     volume: 61
     issue: 314
     year: 1966
+  - type: article
+    authors:
+      - family-names: Chatterjee
+        given-names: Sourav
+    title: "A New Coefficient of Correlation"
+    journal: "Journal of the American Statistical Association"
+    volume: 116
+    issue: 536
+    year: 2021
+  - type: article
+    authors:
+      - family-names: Székely
+        given-names: Gábor J.
+      - family-names: Rizzo
+        given-names: Maria L.
+      - family-names: Bakirov
+        given-names: Nail K.
+    title: "Measuring and Testing Dependence by Correlation of Distances"
+    journal: "The Annals of Statistics"
+    volume: 35
+    issue: 6
+    year: 2007
+  - type: article
+    authors:
+      - family-names: Huo
+        given-names: Xiaoming
+      - family-names: Székely
+        given-names: Gábor J.
+    title: "Fast Computing for Distance Covariance"
+    journal: "Technometrics"
+    volume: 58
+    issue: 4
+    year: 2016
+  - type: article
+    authors:
+      - family-names: Lovell
+        given-names: David
+      - family-names: Pawlowsky-Glahn
+        given-names: Vera
+      - family-names: Egozcue
+        given-names: Juan José
+      - family-names: Marguerat
+        given-names: Samuel
+      - family-names: Bähler
+        given-names: Jürg
+    title: "Proportionality: A Valid Alternative to Correlation for Relative Data"
+    journal: "PLoS Computational Biology"
+    volume: 11
+    issue: 3
+    year: 2015
+  - type: article
+    authors:
+      - family-names: Erb
+        given-names: Ionas
+      - family-names: Notredame
+        given-names: Cedric
+    title: "How Should We Measure Proportionality on Relative Gene Expression Data?"
+    journal: "Theory in Biosciences"
+    volume: 135
+    issue: 1-2
+    year: 2016
+  - type: article
+    authors:
+      - family-names: Boudt
+        given-names: Kris
+      - family-names: Cornelissen
+        given-names: Jonathan
+      - family-names: Croux
+        given-names: Christophe
+    title: "The Gaussian Rank Correlation Estimator: Robustness Properties"
+    journal: "Statistics and Computing"
+    volume: 22
+    issue: 2
+    year: 2012

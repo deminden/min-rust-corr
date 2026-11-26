@@ -84,7 +84,16 @@ peak RSS.
 - D7 statrs removed (own special functions pass all accuracy tests).
 - D8 resolved: bicor maxPOutliers matches WGCNA exactly.
 - D9 resolved: hellcor default criterion = normalised LOO (matches HellCor).
-- Version is 0.3.0; crates prepared for crates.io (not published).
+- Released on crates.io and PyPI since 0.3.0 (current: 0.4.0).
+
+## 0.4.0 additions
+
+Partial correlation (Pearson, Spearman, Gaussian rank), Gaussian-rank
+correlation, proportionality ρp, Chatterjee's ξ and distance correlation,
+written from the papers listed in PROVENANCE.md and checked against R
+(`lm` residuals, `qnorm`, `energy::dcor`, `XICOR::xicor`): r within 4.8e-14
+everywhere (docs/parity.md). The engines gained asymmetric-statistic support
+for ξ; distance correlation runs in O(n log n) per pair.
 
 ## Provenance log
 

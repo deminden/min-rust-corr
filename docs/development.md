@@ -37,12 +37,12 @@ Source files stay under 300 lines (hard limit 400) and functions under 60 lines
 
 ## Reference fixtures
 
-`tools/make_fixtures.R` regenerates `tests/fixtures/` with R, WGCNA and HellCor
-(used strictly as black boxes; see PROVENANCE.md):
+`tools/make_fixtures.R` regenerates `tests/fixtures/` with R, WGCNA, HellCor,
+energy and XICOR (used strictly as black boxes; see PROVENANCE.md):
 
 ```bash
 Rscript tools/make_fixtures.R          # writes tests/fixtures/ and MANIFEST.json
-cargo test --test parity_rank_methods --test parity_robust --test beta_fixtures
+cargo test --test parity_rank_methods --test parity_robust --test parity_new_methods --test beta_fixtures
 ```
 
 ## Releasing
