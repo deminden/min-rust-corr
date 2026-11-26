@@ -28,6 +28,10 @@ cd python && maturin develop --release && pytest -q tests
 The library and CLI support Rust 1.85 (MSRV); running the test suite needs
 Rust ≥ 1.88 because of the test-only dependencies (proptest, criterion).
 
+`unsafe` is denied crate-wide (`unsafe_code = "deny"`); the only exception is
+the runtime POPCNT dispatch in `src/methods/kendall/popcount.rs`, kept to a
+few documented lines because it measurably doubles the Kendall kernel's speed.
+
 Source files stay under 300 lines (hard limit 400) and functions under 60 lines
 (`clippy::too_many_lines`, threshold in `clippy.toml`).
 

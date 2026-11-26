@@ -10,5 +10,4 @@
   current brute force is O(n²) per pair, ideal for n ≲ 2000).
 - Faster analytic p-values for large blocks (the incomplete-beta continued
   fraction dominates Pearson runtime when p-values are requested).
-- Runtime SIMD dispatch (e.g. POPCNT for the Kendall bitset kernel on CPUs
-  where the baseline target lacks it).
+- Cache-blocked (row-tile × row-tile) Kendall bitset kernel.

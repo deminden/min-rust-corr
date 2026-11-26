@@ -40,7 +40,7 @@ viewing, diffing or grepping them at any commit.
 | src/stats/special.rs, gamma.rs | clean-room: DLMF 5.11.1 (Stirling series), Lanczos approximation (published g = 7 coefficients), DLMF 8.17.22 continued fraction with modified Lentz, DLMF 8.7.1 / 8.9.2 (incomplete gamma) |
 | src/stats/beta.rs | clean-room: DLMF §8.17 (8.17.4 symmetry, 8.17.22), bracketed Newton |
 | src/methods/pearson.rs, spearman.rs | ported from author-original pearson.rs / spearman.rs @ 83d9ee4 (centre + scale; ranks then Pearson) |
-| src/methods/kendall/* | knight.rs: Knight (1966) JASA 61(314); variance.rs: Kendall, Rank Correlation Methods (tie-corrected var S); bitset.rs: new; mod.rs: new (replaces author-original kendall.rs and the `kendalls` crate) |
+| src/methods/kendall/* | knight.rs: Knight (1966) JASA 61(314); variance.rs: Kendall, Rank Correlation Methods (tie-corrected var S); bitset.rs and popcount.rs: new (own derivation of S from pair-sign bits); mod.rs: new (replaces author-original kendall.rs and the `kendalls` crate) |
 | src/methods/bicor.rs | clean-room: Wilcox (2012) ch. 9; Langfelder & Horvath (2012) JSS 46(11) text/equations; WGCNA `bicor` help page (argument semantics of maxPOutliers, pearsonFallback) |
 | src/methods/hellcor/* | clean-room: Geenens & Lafaye de Micheaux (2022) JASA 117(538) / arXiv:1810.10276v4 §5, App. B–C; HellCor help-page argument names (alpha, Kmax, Lmax) |
 | tests/*.rs, tests/common | new; compat_v02.rs adapted from author-original synthetic.rs @ 83d9ee4 |
@@ -86,3 +86,6 @@ viewing, diffing or grepping them at any commit.
   superseded by tools/make_fixtures.R and the parity tests.
 - 2026-11-26: Restructured into a single crate `mincorr` (library + `mincorr` binary behind
   the default `cli` feature); paths in the table above updated. No new references.
+- 2026-11-26 (0.3.1): Kendall bitset identity S = |T| − 2·|T ∧ (g_x ⊕ g_y)| derived directly
+  from the definition of concordant pairs; Harley–Seal counting was benchmarked and not
+  adopted. No external references.

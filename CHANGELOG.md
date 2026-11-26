@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.3.1 — 2026-11-26
+
+### Performance
+
+- Kendall: new pair-sign bitset kernel, S = |T| − 2·|T ∧ (g_x ⊕ g_y)|, one
+  popcount per word for tie-free rows (two when both rows have ties) instead
+  of four, and half the memory for tie-free rows.
+- Kendall: the bitset path now covers any sample size whose bitsets fit a
+  512 MiB budget (was n ≤ 128); Knight's algorithm remains the fallback.
+- Kendall: bit counting is dispatched at runtime to the POPCNT instruction on
+  x86-64 CPUs that have it (portable builds could not assume it). This is the
+  crate's only `unsafe` code, isolated in `methods/kendall/popcount.rs`.
+- Result: 2000 × 600 Kendall 33.2 s → 2.0 s and 3000 × 77 0.42 s → 0.16 s on
+  2 threads; results are bit-identical.
+
+### Changed
+
+- `PairKernel::shared` also receives the number of rows to prepare.
+
 ## 0.3.0 — 2026-11-26
 
 Complete rewrite under the MIT licence. bicor, hellcor and the Beta-distribution

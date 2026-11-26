@@ -89,7 +89,7 @@ impl PairKernel for Hellcor {
     type Prepared = Vec<u32>;
     type Scratch = HellcorScratch;
 
-    fn shared(&self, n_obs: usize, pv: &PvalueSpec) -> Result<HellcorShared> {
+    fn shared(&self, n_obs: usize, _n_rows: usize, pv: &PvalueSpec) -> Result<HellcorShared> {
         let mc = match *pv {
             PvalueSpec::MonteCarlo { samples, seed } => Some((samples, seed)),
             _ => None,

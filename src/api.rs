@@ -161,7 +161,8 @@ impl<U: exec::EngineUser> MethodVisitor for Build<'_, U> {
     }
 
     fn pairwise<K: PairKernel>(self, k: &K) -> Result<U::Out> {
-        let sh = k.shared(self.a.ncols(), &self.pvalues)?;
+        let rows = self.a.nrows() + self.b.map_or(0, |b| b.nrows());
+        let sh = k.shared(self.a.ncols(), rows, &self.pvalues)?;
         let sa = PairSide::build(k, &sh, self.a, self.policy)?;
         let sb = self.b.map(|b| PairSide::build(k, &sh, b, self.policy)).transpose()?;
         let e = PairEngine::new(k, &sh, sa, sb);

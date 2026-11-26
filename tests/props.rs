@@ -21,7 +21,7 @@ proptest! {
     }
 
     #[test]
-    fn kendall_bitset_matches_knight((x, y) in (4usize..140).prop_flat_map(|n| (tied_vec(n), tied_vec(n)))) {
+    fn kendall_bitset_matches_knight((x, y) in (4usize..300).prop_flat_map(|n| (tied_vec(n), tied_vec(n)))) {
         // Matrix path (bitsets for n <= 128) vs gathered path (Knight).
         let m = Array2::from_shape_vec((2, x.len()), [x.clone(), y.clone()].concat()).unwrap();
         let full = Correlator::new(Method::Kendall).full(m.view()).unwrap().corr[[0, 1]];

@@ -55,8 +55,10 @@ pub trait PairKernel: Sync {
     type Prepared: Send + Sync;
     /// Per-thread scratch space.
     type Scratch: Send;
-    /// Build shared tables for `n_obs` observations.
-    fn shared(&self, n_obs: usize, pvalues: &PvalueSpec) -> Result<Self::Shared>;
+    /// Build shared state for `n_obs` observations and `n_rows` rows to be
+    /// prepared in total (lets a kernel size per-row structures to a memory
+    /// budget).
+    fn shared(&self, n_obs: usize, n_rows: usize, pvalues: &PvalueSpec) -> Result<Self::Shared>;
     /// Allocate scratch for up to `n_obs` observations.
     fn scratch(&self, n_obs: usize) -> Self::Scratch;
     /// Prepare a complete (all finite) row; `None` when degenerate.

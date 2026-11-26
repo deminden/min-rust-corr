@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "mincorr"
-version = "0.3.0"
+version = "0.3.1"
 description = "Fast correlation matrices (Pearson, Spearman, Kendall, biweight midcorrelation, Hellinger correlation) computed in Rust"
 readme = "README.md"
 requires-python = ">=3.9"

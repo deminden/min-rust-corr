@@ -5,7 +5,7 @@ type: software
 authors:
   - family-names: Demin
     given-names: Denis
-version: 0.3.0
+version: 0.3.1
 date-released: "2026-11-26"
 license: MIT
 repository-code: "https://github.com/deminden/min-rust-corr"

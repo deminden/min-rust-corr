@@ -30,7 +30,7 @@ matches numpy/scipy.
 
 See docs/benchmarks.md (2-vCPU Xeon vs the old 16-thread 7950X3D figures).
 Hellcor 2950 × 77: 102.9 s on 2 threads vs 1575 s on 16 threads (≈ 122× in
-thread-seconds; target ≥ 50× met). Kendall ≈ 33×, Pearson/Spearman ≈ 21–23×,
+thread-seconds; target ≥ 50× met). Kendall ≈ 85× (0.3.1), Pearson/Spearman ≈ 21–23×,
 bicor ≈ 9× in thread-seconds. CLI: 10 000 × 10 000 Pearson to .tsv.gz with 89 MB
 peak RSS.
 
@@ -50,8 +50,11 @@ peak RSS.
    same engine and layout executor.
 2. Hellcor nearest neighbours are brute force for all n (no uniform grid yet);
    fine for the target regime (n ≲ 2000), parked in docs/ideas.md.
-3. Kendall bitsets are used for n ≤ 128 only (memory bound); larger n uses
-   Knight's algorithm (2000 × 600: 33 s on 2 threads).
+3. Kendall uses pair-sign bitsets whenever they fit a 512 MiB budget and
+   Knight's algorithm otherwise (0.3.1; 2000 × 600: 2.0 s on 2 threads).
+   The one `unsafe` block in the crate dispatches the bitset kernel to the
+   hardware POPCNT instruction at runtime (2–3× measured gain, above the
+   specification's 20 % threshold), isolated in `methods/kendall/popcount.rs`.
 4. `rand` is not a dependency; `rand_chacha` (+ its `rand_core`) is used
    directly with an own unbiased bounded-integer routine.
 5. Python requires ≥ 3.9 (abi3-py39) instead of 3.8.

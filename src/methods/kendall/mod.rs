@@ -6,6 +6,7 @@
 
 pub mod bitset;
 pub mod knight;
+mod popcount;
 pub mod variance;
 
 use crate::engine::{PairKernel, PairStat};
@@ -20,9 +21,17 @@ use knight::{KnightScratch, kendall_s};
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Kendall;
 
-/// A row prepared once: sort permutation, dense ranks and tie sums.
+/// Shared state: whether prepared rows carry pair-sign bitsets.
+#[derive(Debug, Clone, Copy)]
+pub struct KendallShared {
+    bitsets: bool,
+}
+
+/// A row prepared once: tie sums plus either pair-sign bitsets or the sort
+/// permutation and dense ranks used by Knight's algorithm.
 #[derive(Debug, Clone, Default)]
 pub struct KendallRow {
+    n: usize,
     perm: Vec<u32>,
     ranks: Vec<u32>,
     ties: TieSums,
@@ -41,6 +50,7 @@ impl KendallRow {
 
     /// Ranks, permutation and tie sums of `x` (no degeneracy check).
     fn rank(&mut self, x: &[f64], counts: &mut Vec<u32>) {
+        self.n = x.len();
         self.ranks.resize(x.len(), 0);
         dense_ranks(x, &mut self.perm, &mut self.ranks);
         self.ties = TieSums::from_dense(&self.ranks, counts);
@@ -52,6 +62,14 @@ impl KendallRow {
             (Some(x), Some(y)) => x.s(y),
             _ => kendall_s(&self.perm, &self.ranks, &other.ranks, self.ties.pairs, other.ties.pairs, s),
         }
+    }
+
+    /// Switch to the bitset representation (ranks are no longer needed).
+    fn into_bitsets(mut self) -> Self {
+        self.bits = Some(SignBits::new(&self.ranks, self.ties.pairs));
+        self.perm = Vec::new();
+        self.ranks = Vec::new();
+        self
     }
 }
 
@@ -65,7 +83,7 @@ pub struct KendallScratch {
 }
 
 fn tau_b(a: &KendallRow, b: &KendallRow, s: &mut KnightScratch) -> PairStat {
-    let n = a.ranks.len();
+    let n = a.n;
     let sv = a.s(b, s);
     let n0 = (n as u64) * (n as u64 - 1) / 2;
     let den = ((n0 - a.ties.pairs) as f64 * (n0 - b.ties.pairs) as f64).sqrt();
@@ -74,41 +92,38 @@ fn tau_b(a: &KendallRow, b: &KendallRow, s: &mut KnightScratch) -> PairStat {
 }
 
 impl PairKernel for Kendall {
-    type Shared = ();
+    type Shared = KendallShared;
     type Prepared = KendallRow;
     type Scratch = KendallScratch;
 
-    fn shared(&self, _: usize, _: &PvalueSpec) -> Result<()> {
-        Ok(())
+    fn shared(&self, n_obs: usize, n_rows: usize, _: &PvalueSpec) -> Result<KendallShared> {
+        Ok(KendallShared { bitsets: bitset::fits(n_obs, n_rows) })
     }
 
     fn scratch(&self, _: usize) -> KendallScratch {
         KendallScratch::default()
     }
 
-    fn prepare(&self, x: &[f64], _: &(), s: &mut KendallScratch) -> Option<KendallRow> {
+    fn prepare(&self, x: &[f64], sh: &KendallShared, s: &mut KendallScratch) -> Option<KendallRow> {
         let mut r = KendallRow::default();
         if !r.fill(x, &mut s.counts) {
             return None;
         }
-        if x.len() <= bitset::MAX_N {
-            r.bits = Some(SignBits::new(&r.ranks));
-        }
-        Some(r)
+        Some(if sh.bitsets { r.into_bitsets() } else { r })
     }
 
-    fn eval(&self, a: &KendallRow, b: &KendallRow, _: &(), s: &mut KendallScratch) -> PairStat {
+    fn eval(&self, a: &KendallRow, b: &KendallRow, _: &KendallShared, s: &mut KendallScratch) -> PairStat {
         tau_b(a, b, &mut s.knight)
     }
 
-    fn eval_gathered(&self, x: &[f64], y: &[f64], _: &(), s: &mut KendallScratch) -> PairStat {
+    fn eval_gathered(&self, x: &[f64], y: &[f64], _: &KendallShared, s: &mut KendallScratch) -> PairStat {
         if !s.gx.fill(x, &mut s.counts) || !s.gy.fill(y, &mut s.counts) {
             return PairStat::nan(x.len());
         }
         tau_b(&s.gx, &s.gy, &mut s.knight)
     }
 
-    fn pvalue(&self, st: &PairStat, _: &()) -> f64 {
+    fn pvalue(&self, st: &PairStat, _: &KendallShared) -> f64 {
         variance::pvalue(st.aux, st.n_eff)
     }
 }

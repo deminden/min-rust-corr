@@ -69,7 +69,7 @@ impl MethodVisitor for PairV<'_> {
 
     fn pairwise<K: PairKernel>(self, k: &K) -> Result<PairResult> {
         let Some((gx, gy)) = self.gather()? else { return Ok(self.nan()) };
-        let sh = k.shared(self.x.len(), &self.pvalues)?;
+        let sh = k.shared(self.x.len(), 2, &self.pvalues)?;
         let st = k.eval_gathered(&gx, &gy, &sh, &mut k.scratch(self.x.len()));
         let corr = if st.value.is_nan() { st.value } else { clamp_corr(st.value) };
         Ok(PairResult { corr, pvalue: self.pvalues.wanted().then(|| k.pvalue(&st, &sh)), n_eff: gx.len() })
