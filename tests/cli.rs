@@ -190,3 +190,39 @@ fn csv_and_gzip_input_and_stdout() {
         .success()
         .stdout(predicate::str::contains("a\t1.000\t-0.500"));
 }
+
+#[test]
+fn covariates_xi_edges_and_rho() {
+    let (dir, input) = setup();
+    let cov = dir.path().join("cov.tsv");
+    // Columns in another order than the input: matched by sample name.
+    std::fs::write(&cov, "id\ts3\ts1\ts2\ts5\ts4\nage\t30\t10\t20\t50\t45\n").unwrap();
+    cmd(dir.path())
+        .args([input.to_str().unwrap(), "pearson", "--nan-policy", "propagate", "--format", "tsv"])
+        .arg("--covariates")
+        .arg(&cov)
+        .assert()
+        .success();
+    let (_, rows) = read_tsv(&dir.path().join("expr_pearson_correlations.tsv"));
+    assert!(rows[0][1].is_finite() && rows[2][0].is_nan());
+    std::fs::write(dir.path().join("bad.tsv"), "id\ts1\ts2\nage\t1\t2\n").unwrap();
+    cmd(dir.path())
+        .args([input.to_str().unwrap(), "pearson", "--covariates", "bad.tsv"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("missing from the covariate file"));
+
+    let out = cmd(dir.path())
+        .args([input.to_str().unwrap(), "xi", "--format", "edges", "-o", "-"])
+        .output()
+        .unwrap();
+    let edges = String::from_utf8(out.stdout).unwrap();
+    assert!(edges.contains("zeta\talpha\t") && edges.contains("alpha\tzeta\t"));
+    assert!(!edges.lines().any(|l| l.starts_with("zeta\tzeta")));
+
+    cmd(dir.path())
+        .args([input.to_str().unwrap(), "rho", "--pseudocount", "1", "--format", "tsv"])
+        .assert()
+        .success();
+    cmd(dir.path()).args([input.to_str().unwrap(), "dcor", "--with-pvalues"]).assert().failure();
+}

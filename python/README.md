@@ -5,10 +5,13 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/deminden/min-rust-corr/blob/main/LICENSE)
 
 Fast correlation matrices for wide data, computed in Rust: **Pearson,
-Spearman, Kendall tau-b, biweight midcorrelation (bicor) and the Hellinger
-correlation**, with p-values and consistent missing-value handling. Rows are
-variables (genes, features), columns are observations (samples). Results match
-R's `stats::cor` / `cor.test`, `WGCNA::bicor` and `HellCor::HellCor`.
+Spearman, Kendall tau-b, biweight midcorrelation (bicor), Hellinger
+correlation, Gaussian-rank correlation, proportionality ρp, Chatterjee's ξ
+and distance correlation**, plus partial (covariate-adjusted) correlation,
+with p-values and consistent missing-value handling. Rows are variables
+(genes, features), columns are observations (samples). Results match R's
+`stats::cor` / `cor.test`, `WGCNA::bicor`, `HellCor::HellCor`,
+`energy::dcor` and `XICOR::xicor`.
 
 ```bash
 pip install mincorr            # wheels for Linux, macOS and Windows (Python ≥ 3.9)
@@ -25,15 +28,18 @@ r, p = mincorr.corr(x, method="kendall", pvalues=True)    # with p-values
 u = mincorr.corr(x, method="bicor", layout="upper")       # packed upper triangle
 c = mincorr.corr(x[:5], x, method="hellcor", layout="cross")  # 5 × 100
 r01 = mincorr.pair(x[0], x[1], method="pearson")
+rp = mincorr.corr(x, method="spearman", covariates=x[:2])  # partial Spearman
+xi = mincorr.corr(x, method="xi")                         # xi[i, j] = ξ(row i → row j)
 ```
 
 | Argument | Values |
 |---|---|
-| `method` | `"pearson"`, `"spearman"`, `"kendall"`, `"bicor"`, `"hellcor"` |
-| `layout` | `"full"` (default), `"cross"` (needs a second matrix), `"upper"` |
-| `pvalues` | `False` (default) / `True` — Monte-Carlo null for hellcor |
+| `method` | `"pearson"`, `"spearman"`, `"kendall"`, `"bicor"`, `"hellcor"`, `"gaussian_rank"`, `"rho"`, `"xi"`, `"dcor"` |
+| `layout` | `"full"` (default), `"cross"` (needs a second matrix), `"upper"` (symmetric methods) |
+| `pvalues` | `False` (default) / `True` — Monte-Carlo null for hellcor; none for rho and dcor |
 | `nan_policy` | `"pairwise"` (default), `"propagate"`, `"error"` |
-| method parameters | `alpha`, `kmax`, `lmax` (hellcor); `max_p_outliers` (bicor); `mc_samples`, `seed` (hellcor p-values) |
+| `covariates` | array (k × samples) to partial out — pearson, spearman, gaussian_rank |
+| method parameters | `alpha`, `kmax`, `lmax` (hellcor); `max_p_outliers` (bicor); `pseudocount`, `clr` (rho); `symmetric` (xi); `mc_samples`, `seed` (hellcor p-values) |
 
 Inputs may be any NumPy-compatible float array (float32 or float64, C- or
 Fortran-ordered). Labelled pandas output: `mincorr.frames.corr_frame(df)`

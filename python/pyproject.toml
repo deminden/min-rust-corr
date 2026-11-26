@@ -5,12 +5,12 @@ build-backend = "maturin"
 [project]
 name = "mincorr"
 version = "0.3.1"
-description = "Fast correlation matrices (Pearson, Spearman, Kendall, biweight midcorrelation, Hellinger correlation) computed in Rust"
+description = "Fast correlation matrices (Pearson, Spearman, Kendall, bicor, Hellinger, partial, distance correlation, Chatterjee xi, proportionality) computed in Rust"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [{ name = "Denis Demin" }]
-keywords = ["correlation", "statistics", "kendall", "spearman", "bicor", "hellinger", "co-expression", "bioinformatics"]
+keywords = ["correlation", "statistics", "kendall", "spearman", "bicor", "hellinger", "distance-correlation", "partial-correlation", "co-expression", "bioinformatics"]
 dependencies = ["numpy>=1.21"]
 classifiers = [
   "Development Status :: 4 - Beta",

@@ -8,7 +8,6 @@ use crate::methods::MethodVisitor;
 use crate::options::{NanPolicy, PvalueSpec};
 use crate::prep::RowStatus;
 use crate::prep::validity::gather_common;
-use crate::stats::tdist::corr_t_pvalue;
 use ndarray::ArrayView1;
 
 pub struct PairV<'a> {
@@ -63,8 +62,9 @@ impl MethodVisitor for PairV<'_> {
         let (mut tx, mut ty, mut s) = (vec![0.0; n], vec![0.0; n], T::Scratch::default());
         let ok = t.transform(&gx, &mut tx, &mut s) == RowStatus::Ok
             && t.transform(&gy, &mut ty, &mut s) == RowStatus::Ok;
-        let corr = if ok { clamp_corr(dot(&tx, &ty)) } else { f64::NAN };
-        Ok(PairResult { corr, pvalue: self.pvalues.wanted().then(|| corr_t_pvalue(corr, n)), n_eff: n })
+        let corr =
+            if ok { clamp_corr(t.combine(dot(&tx, &ty), dot(&tx, &tx), dot(&ty, &ty))) } else { f64::NAN };
+        Ok(PairResult { corr, pvalue: self.pvalues.wanted().then(|| t.pvalue(corr, n)), n_eff: n })
     }
 
     fn pairwise<K: PairKernel>(self, k: &K) -> Result<PairResult> {

@@ -3,7 +3,7 @@
 use crate::args::{Cli, PvalueMode};
 use crate::input::read_matrix;
 use crate::naming::{base_name, clean_stem, legacy_stem};
-use crate::output::Sink;
+use crate::output::{Cells, Sink};
 use crate::sinks::{self, Shape};
 use crate::subset::apply;
 use crate::timing::Reporter;
@@ -35,8 +35,9 @@ pub fn correlator(cli: &Cli) -> Result<Correlator> {
 pub fn run(cli: Cli) -> Result<()> {
     let mut rep = Reporter::new(cli.quiet, cli.time);
     let corr = correlator(&cli)?;
-    let m = read_matrix(&cli.input, &cli.input_opts)?;
+    let mut m = read_matrix(&cli.input, &cli.input_opts)?;
     rep.say(format!("Loaded {} rows x {} samples.", m.row_ids.len(), m.col_ids.len()));
+    let corr = crate::prepare::prepare(corr, &mut m, &cli)?;
     rep.phase("Data loading:");
     let (sel_a, sel_b) = (cli.subset_a.selector(), cli.subset_b.selector());
     if cli.subset_vs_all && sel_b.has_any() {
@@ -60,7 +61,12 @@ pub fn run(cli: Cli) -> Result<()> {
     let base = base_name(&clean_stem(&cli.input), tag_a.as_deref(), tag_b.as_deref(), cross);
     let lbase = base_name(&legacy_stem(&cli.input), tag_a.as_deref(), tag_b.as_deref(), cross);
     let plan = sinks::plan(&cli, &base, &lbase, method, with_p)?;
-    let shape = Shape { row_ids: rows_a.clone(), col_ids: cols.clone(), symmetric: !cross, with_p };
+    let cells = match (cross, corr.method().is_symmetric()) {
+        (true, _) => Cells::All,
+        (false, true) => Cells::Upper,
+        (false, false) => Cells::OffDiagonal,
+    };
+    let shape = Shape { row_ids: rows_a.clone(), col_ids: cols.clone(), cells, with_p };
     let mut sink = sinks::build(&cli, &plan, &shape)?;
     rep.say(format!(
         "Computing {method} ({} x {}){}...",

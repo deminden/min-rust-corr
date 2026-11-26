@@ -28,7 +28,7 @@ def test_all_v02_names_exist():
         assert name in mincorr.__all__
 
 
-@pytest.mark.parametrize("method", mincorr.METHODS)
+@pytest.mark.parametrize("method", mincorr.METHODS[:5])
 def test_layouts_and_shapes(method):
     x = data()
     full = mincorr.corr(x, method=method)
@@ -64,3 +64,33 @@ def test_pairs_and_errors():
         mincorr.corr(np.array([[1.0, np.nan, 2.0], [1.0, 2.0, 3.0]]), nan_policy="error")
     with pytest.raises(TypeError):
         mincorr.corr(data(), bogus=1)
+
+
+def test_new_methods():
+    x = np.abs(data(5, 40)) + 0.1
+    for m in ("gaussian_rank", "rho", "xi", "dcor"):
+        r = mincorr.corr(x, method=m)
+        assert r.shape == (5, 5) and np.all(np.diag(r) == 1.0)
+    xi = mincorr.corr(x, method="xi")
+    assert xi[0, 1] == mincorr.pair(x[0], x[1], method="xi") and xi[0, 1] != xi[1, 0]
+    sym = mincorr.corr(x, method="xi", symmetric=True)
+    assert np.allclose(sym, sym.T)
+    with pytest.raises(ValueError):
+        mincorr.corr(x, method="xi", layout="upper")
+    with pytest.raises(ValueError):
+        mincorr.corr(x, method="dcor", pvalues=True)
+    _, p = mincorr.corr(x, method="xi", pvalues=True)
+    assert np.nanmax(p) <= 1.0
+    rho1 = mincorr.corr(x - 0.1, method="rho", pseudocount=1.0)
+    assert np.isfinite(rho1).all()
+
+
+def test_partial_correlation():
+    x = data(4, 50)
+    z = data(1, 50, seed=3)[0]
+    r, p = mincorr.corr(x, method="pearson", covariates=z, pvalues=True)
+    res = x - np.outer((x - x.mean(1, keepdims=True)) @ (z - z.mean()) / ((z - z.mean()) ** 2).sum(), z - z.mean())
+    assert np.allclose(r, np.corrcoef(res), atol=1e-13)
+    assert mincorr.pair(x[0], x[1], covariates=z) == pytest.approx(r[0, 1], abs=1e-14)
+    with pytest.raises(ValueError):
+        mincorr.corr(x, method="kendall", covariates=z)

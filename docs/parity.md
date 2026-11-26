@@ -1,8 +1,9 @@
 # Parity with R
 
 Reference values come from `tools/make_fixtures.R` (black-box use of public R
-APIs; R 4.6.2 with WGCNA 1.74 and HellCor 1.3, see MANIFEST.json). Tests: `tests/parity_rank_methods.rs`,
-`beta_fixtures.rs`, `parity_robust.rs`. Columns give max |Δr| over all off-diagonal pairs and the max
+APIs; R 4.6.2 with WGCNA 1.74, HellCor 1.3, energy 1.7.12 and XICOR 0.4.1, see
+MANIFEST.json). Tests: `tests/parity_rank_methods.rs`, `beta_fixtures.rs`,
+`parity_robust.rs`, `parity_new_methods.rs`. Columns give max |Δr| over all off-diagonal pairs and the max
 relative difference of p-values (`cor.test(..., exact = FALSE)`), under
 pairwise-complete handling of missing values.
 
@@ -76,3 +77,26 @@ Two behaviours were settled by these black-box comparisons:
 - bicor `maxPOutliers`: widening the scale on each side to twice the distance
   from the median to the type-7 quantile at p / 1 − p (when larger than 9·MAD)
   reproduces WGCNA to ≤ 9e-16.
+
+## Methods added in 0.4 (`tests/parity_new_methods.rs`)
+
+Datasets without missing values and with at least 6 samples (normal_30x40,
+normal_8x200, lognormal_20x77, ties_15x30, outliers_15x50,
+constant_rows_6x20, monotone_pairs). Pairs involving a constant row are
+excluded where the oracle returns a number (energy returns 0, the ξ formula
+±inf); mincorr returns NaN for degenerate rows. Values are the maxima over all
+datasets.
+
+| Method | Reference | max abs Δr | max Δp |
+|---|---|---|---|
+| Gaussian rank | `cor` / `cor.test` on `qnorm(rank(x)/(n+1))` | 4.4e-16 | 2.3e-13 (rel.) |
+| Partial Pearson (2 covariates) | `cor` of `lm(x ~ Z)` residuals; t with n − 4 df | 5.6e-16 | 4.9e-13 (rel.) |
+| Partial Spearman (2 covariates) | same on ranks of x and Z | 4.4e-16 | 8.3e-14 (rel.) |
+| ξ (all datasets, ties included) | base-R formula of the paper, x-ties by index | 0 (exact) | — |
+| ξ (tie-free datasets) | `XICOR::xicor(x, y, pvalue = TRUE)` | 1.6e-15 | 9.4e-15 (abs.) |
+| Distance correlation | `energy::dcor` | 4.8e-14 | — |
+| ρp (positive datasets) | 1 − var(x−y)/(var x + var y) on clr | 9.6e-16 | — |
+
+XICOR computes its p-value as 1 − Φ(z), which loses all relative accuracy below
+~1e-12; mincorr computes Φ(−z) via erfc, so ξ p-values are compared with an
+absolute tolerance.

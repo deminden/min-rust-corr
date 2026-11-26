@@ -3,7 +3,7 @@
 
 use crate::args::{Cli, Format};
 use crate::naming::pvalue_path;
-use crate::output::{EdgeFilter, EdgesSink, MatrixPair, MatrixSink, NpyWriter, Out, Sink, TsvWriter};
+use crate::output::{Cells, EdgeFilter, EdgesSink, MatrixPair, MatrixSink, NpyWriter, Out, Sink, TsvWriter};
 use anyhow::{Result, bail};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -12,7 +12,7 @@ use std::sync::Arc;
 pub struct Shape {
     pub row_ids: Arc<Vec<String>>,
     pub col_ids: Arc<Vec<String>>,
-    pub symmetric: bool,
+    pub cells: Cells,
     pub with_p: bool,
 }
 
@@ -77,15 +77,8 @@ pub fn build(cli: &Cli, plan: &Plan, s: &Shape) -> Result<Box<dyn Sink>> {
     if o.format == Format::Edges && !o.legacy_tar {
         let filter = EdgeFilter { min_abs_r: o.min_abs_r, max_p: o.max_p, top_k: o.top_k };
         let out = Out::create(&plan.corr, plan.corr.as_os_str() != "-")?;
-        let e = EdgesSink::new(
-            out,
-            s.row_ids.clone(),
-            s.col_ids.clone(),
-            s.symmetric,
-            s.with_p,
-            filter,
-            o.digits,
-        )?;
+        let e =
+            EdgesSink::new(out, s.row_ids.clone(), s.col_ids.clone(), s.cells, s.with_p, filter, o.digits)?;
         return Ok(Box::new(e));
     }
     let corr = matrix_sink(cli, &plan.corr, s)?;

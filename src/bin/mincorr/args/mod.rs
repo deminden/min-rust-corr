@@ -17,7 +17,8 @@ use std::path::PathBuf;
 pub struct Cli {
     /// Input matrix: TSV/CSV, optionally .gz or a single-file .tar.gz.
     pub input: PathBuf,
-    /// Method: pearson, spearman, kendall, bicor (biweight), hellcor (hellinger).
+    /// Method: pearson, spearman, kendall, bicor, hellcor, gaussian_rank,
+    /// rho (proportionality), xi (chatterjee), dcor (distance).
     pub method: String,
     /// Number of threads (v0.2 positional form of --threads).
     pub threads_positional: Option<usize>,
@@ -45,6 +46,11 @@ pub struct Cli {
     pub output: OutputArgs,
     #[command(flatten)]
     pub params: MethodArgs,
+    /// Covariates for partial correlation (pearson, spearman,
+    /// gaussian_rank): a table with one row per covariate and the input's
+    /// sample names as columns (matched by name).
+    #[arg(long)]
+    pub covariates: Option<PathBuf>,
 }
 
 /// P-value options.
@@ -91,6 +97,15 @@ pub struct MethodArgs {
     /// Bicor: maximum fraction of outliers per side of the median.
     #[arg(long, default_value_t = 1.0)]
     pub max_p_outliers: f64,
+    /// Rho: pseudocount added before the log (zeros are missing otherwise).
+    #[arg(long, default_value_t = 0.0)]
+    pub pseudocount: f64,
+    /// Rho: the input is already log-ratio transformed (skip log + clr).
+    #[arg(long)]
+    pub no_clr: bool,
+    /// Xi: report max(xi(x,y), xi(y,x)) instead of the asymmetric xi(row, column).
+    #[arg(long)]
+    pub xi_symmetric: bool,
 }
 
 impl MethodArgs {
@@ -101,6 +116,9 @@ impl MethodArgs {
             kmax: self.kmax,
             lmax: self.lmax,
             max_p_outliers: self.max_p_outliers,
+            pseudocount: self.pseudocount,
+            clr: !self.no_clr,
+            xi_symmetric: self.xi_symmetric,
         }
     }
 }

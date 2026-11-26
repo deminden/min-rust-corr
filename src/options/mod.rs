@@ -3,7 +3,10 @@
 
 mod params;
 
-pub use params::{BicorParams, HellcorCriterion, HellcorParams, MadZeroFallback, MethodSettings};
+pub use params::{
+    BicorParams, ChatterjeeParams, HellcorCriterion, HellcorParams, MadZeroFallback, MethodSettings,
+    ProportionalityParams,
+};
 
 use crate::error::{CorrError, Result};
 use std::str::FromStr;
@@ -21,6 +24,14 @@ pub enum Method {
     Bicor(BicorParams),
     /// Hellinger correlation (Geenens & Lafaye de Micheaux, 2022).
     Hellcor(HellcorParams),
+    /// Gaussian-rank correlation: Pearson on normal scores Φ⁻¹(R/(n+1)).
+    GaussianRank,
+    /// Proportionality ρp = 1 − var(x − y)/(var x + var y) on log-ratios.
+    Proportionality(ProportionalityParams),
+    /// Chatterjee's rank correlation ξ (asymmetric by default).
+    Chatterjee(ChatterjeeParams),
+    /// Distance correlation (Székely, Rizzo & Bakirov 2007).
+    DistanceCorrelation,
 }
 
 impl Method {
@@ -32,11 +43,16 @@ impl Method {
             Method::Kendall => "kendall",
             Method::Bicor(_) => "bicor",
             Method::Hellcor(_) => "hellcor",
+            Method::GaussianRank => "gaussian_rank",
+            Method::Proportionality(_) => "rho",
+            Method::Chatterjee(_) => "xi",
+            Method::DistanceCorrelation => "dcor",
         }
     }
 
-    /// Parse a method name with default parameters. Accepts the v0.2 aliases
-    /// `biweight` and `hellinger`; case-insensitive.
+    /// Parse a method name with default parameters; case-insensitive.
+    /// Aliases: `biweight`, `hellinger` (v0.2), `gaussrank`,
+    /// `proportionality`, `chatterjee`, `distance`.
     pub fn from_name(name: &str) -> Result<Self> {
         match name.to_ascii_lowercase().as_str() {
             "pearson" => Ok(Method::Pearson),
@@ -44,6 +60,10 @@ impl Method {
             "kendall" => Ok(Method::Kendall),
             "bicor" | "biweight" => Ok(Method::Bicor(BicorParams::default())),
             "hellcor" | "hellinger" => Ok(Method::Hellcor(HellcorParams::default())),
+            "gaussian_rank" | "gaussian-rank" | "gaussrank" => Ok(Method::GaussianRank),
+            "rho" | "proportionality" => Ok(Method::Proportionality(ProportionalityParams::default())),
+            "xi" | "chatterjee" => Ok(Method::Chatterjee(ChatterjeeParams::default())),
+            "dcor" | "distance" => Ok(Method::DistanceCorrelation),
             other => {
                 Err(CorrError::InvalidParam { name: "method", reason: format!("unknown method '{other}'") })
             }
@@ -57,14 +77,31 @@ impl Method {
             Method::Hellcor(p) => {
                 Method::Hellcor(HellcorParams { alpha: s.alpha, kmax: s.kmax, lmax: s.lmax, ..p })
             }
+            Method::Proportionality(_) => {
+                Method::Proportionality(ProportionalityParams { pseudocount: s.pseudocount, clr: s.clr })
+            }
+            Method::Chatterjee(_) => Method::Chatterjee(ChatterjeeParams { symmetric: s.xi_symmetric }),
             m => m,
         })
     }
 
-    /// True when the method is evaluated pair by pair (Kendall, Hellcor)
-    /// rather than through a matrix product.
+    /// True when the method is evaluated pair by pair (Kendall, Hellcor,
+    /// ξ, distance correlation) rather than through a matrix product.
     pub fn is_pairwise(&self) -> bool {
-        matches!(self, Method::Kendall | Method::Hellcor(_))
+        matches!(
+            self,
+            Method::Kendall | Method::Hellcor(_) | Method::Chatterjee(_) | Method::DistanceCorrelation
+        )
+    }
+
+    /// True when cell (i, j) always equals cell (j, i).
+    pub fn is_symmetric(&self) -> bool {
+        !matches!(self, Method::Chatterjee(p) if !p.symmetric)
+    }
+
+    /// True when the method accepts covariates (partial correlation).
+    pub fn supports_covariates(&self) -> bool {
+        matches!(self, Method::Pearson | Method::Spearman | Method::GaussianRank)
     }
 }
 
@@ -86,8 +123,10 @@ pub enum PvalueSpec {
     /// No p-values.
     #[default]
     None,
-    /// Analytic (asymptotic) p-values: Student t for Pearson, Spearman and
-    /// bicor; tie-corrected normal approximation for Kendall.
+    /// Analytic (asymptotic) p-values: Student t for Pearson, Spearman,
+    /// Gaussian rank and bicor; tie-corrected normal approximation for
+    /// Kendall; one-sided normal approximation for ξ. Not available for
+    /// ρp and distance correlation.
     Analytic,
     /// Monte-Carlo permutation null (Hellcor only).
     MonteCarlo {

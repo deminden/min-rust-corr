@@ -27,6 +27,18 @@ pub trait RowTransform: Sync {
     type Scratch: Default + Send;
     /// Write the transform of `x` into `out` (same length as `x`).
     fn transform(&self, x: &[f64], out: &mut [f64], s: &mut Self::Scratch) -> RowStatus;
+
+    /// Correlation from the dot product of two transformed rows and their
+    /// squared norms. The default suits unit-norm transforms (r = dot).
+    fn combine(&self, dot: f64, _sq_a: f64, _sq_b: f64) -> f64 {
+        dot
+    }
+
+    /// P-value of `r` from `n` observations (default: two-sided Student t,
+    /// n − 2 degrees of freedom).
+    fn pvalue(&self, r: f64, n: usize) -> f64 {
+        crate::stats::tdist::corr_t_pvalue(r, n)
+    }
 }
 
 /// Statistic produced by a pairwise kernel.
@@ -75,6 +87,12 @@ pub trait PairKernel: Sync {
     fn eval_gathered(&self, x: &[f64], y: &[f64], sh: &Self::Shared, s: &mut Self::Scratch) -> PairStat;
     /// P-value of a statistic.
     fn pvalue(&self, st: &PairStat, sh: &Self::Shared) -> f64;
+
+    /// Whether the statistic is symmetric in its two arguments (the
+    /// symmetric layouts then compute one triangle and mirror it).
+    fn symmetric(&self) -> bool {
+        true
+    }
 }
 
 /// Something that can fill row-major output blocks.
@@ -85,6 +103,10 @@ pub trait Engine: Sync {
     fn scratch(&self) -> Self::Scratch;
     /// Number of output columns.
     fn n_cols(&self) -> usize;
+    /// Whether cell (i, j) equals cell (j, i) in a single-matrix layout.
+    fn symmetric(&self) -> bool {
+        true
+    }
     /// Fill rows `rows` into `out` (`rows.len() × n_cols`). With
     /// `upper_only`, only entries with column ≥ row need to be written.
     fn fill(

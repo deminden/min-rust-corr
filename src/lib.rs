@@ -2,7 +2,9 @@
 //!
 //! Fast correlation matrices for wide numeric data (rows = variables,
 //! columns = observations): Pearson, Spearman, Kendall tau-b, biweight
-//! midcorrelation and Hellinger correlation, in full, cross and packed
+//! midcorrelation, Hellinger correlation, Gaussian-rank correlation,
+//! proportionality ρp, Chatterjee's ξ and distance correlation, with
+//! optional covariate adjustment (partial correlation), in full, cross and packed
 //! upper-triangle layouts, with optional p-values and streaming output.
 //!
 //! The entry point is [`Correlator`]. See `docs/semantics.md` for the
@@ -26,9 +28,10 @@ pub use compat::{bicor, hellcor, hellcor_pair, kendall, pearson, spearman};
 pub use error::{CorrError, Result};
 pub use layout::{CorrOutput, PackedOutput, PairResult, RowBlock, packed_index, packed_len};
 pub use options::{
-    BicorParams, HellcorCriterion, HellcorParams, MadZeroFallback, Method, MethodSettings, NanPolicy,
-    PvalueSpec,
+    BicorParams, ChatterjeeParams, HellcorCriterion, HellcorParams, MadZeroFallback, Method, MethodSettings,
+    NanPolicy, ProportionalityParams, PvalueSpec,
 };
+pub use prep::logratio::log_clr;
 
 /// Compiles and runs the Rust example in README.md as a doctest.
 #[cfg(doctest)]

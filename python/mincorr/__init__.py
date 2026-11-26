@@ -24,8 +24,10 @@ from . import _core
 
 __version__ = _core.__version__
 
-METHODS = ("pearson", "spearman", "kendall", "bicor", "hellcor")
-_DEFAULTS = dict(alpha=6.0, kmax=20, lmax=20, max_p_outliers=1.0, mc_samples=10_000, seed=42)
+METHODS = ("pearson", "spearman", "kendall", "bicor", "hellcor", "gaussian_rank", "rho", "xi", "dcor")
+_LEGACY_METHODS = METHODS[:5]
+_DEFAULTS = dict(alpha=6.0, kmax=20, lmax=20, max_p_outliers=1.0, pseudocount=0.0, clr=True, symmetric=False,
+                 mc_samples=10_000, seed=42)
 
 
 def _as_f64(a: Any, ndim: int, name: str) -> np.ndarray:
@@ -42,30 +44,53 @@ def _options(method: str, pvalues: bool, nan_policy: str, params: dict) -> dict:
     return {**_DEFAULTS, **params, "method": method, "pvalues": bool(pvalues), "nan_policy": nan_policy}
 
 
-def corr(data, other=None, method="pearson", layout="full", pvalues=False, nan_policy="pairwise", **params):
+def _cov(covariates, n_obs):
+    if covariates is None:
+        return None
+    z = np.asarray(covariates, dtype=np.float64)
+    if z.ndim == 1:
+        z = z[np.newaxis, :]
+    if z.ndim != 2:
+        raise ValueError(f"covariates must be 1- or 2-dimensional, got shape {z.shape}")
+    return z
+
+
+def corr(data, other=None, method="pearson", layout="full", pvalues=False, nan_policy="pairwise",
+         covariates=None, **params):
     """Correlation matrix of the rows of ``data`` (or ``data`` × ``other``).
 
+    method: pearson, spearman, kendall, bicor, hellcor, gaussian_rank,
+    rho (proportionality), xi (Chatterjee) or dcor (distance correlation).
     layout: "full" (square), "cross" (requires ``other``) or "upper"
-    (packed upper triangle incl. diagonal, length n(n+1)/2).
-    pvalues: also return p-values (Monte Carlo for hellcor).
+    (packed upper triangle incl. diagonal, length n(n+1)/2; symmetric
+    methods only).
+    pvalues: also return p-values (Monte Carlo for hellcor; not available
+    for rho and dcor).
     nan_policy: "pairwise" (default), "propagate" or "error".
+    covariates: array (k × observations, or one vector) to adjust for
+    (partial correlation; pearson, spearman and gaussian_rank).
     params: alpha, kmax, lmax (hellcor); max_p_outliers (bicor);
-    mc_samples, seed (hellcor p-values).
+    pseudocount, clr (rho); symmetric (xi); mc_samples, seed (hellcor
+    p-values).
     Returns the matrix, or ``(matrix, pvalues)`` when ``pvalues`` is true.
     """
     a = _as_f64(data, 2, "data")
     b = None if other is None else _as_f64(other, 2, "other")
     if layout == "cross" and b is None:
         raise ValueError("layout='cross' requires `other`")
-    r, pv = _core.compute(a, b, layout, _options(method, pvalues, nan_policy, params))
+    opts = _options(method, pvalues, nan_policy, params)
+    r, pv = _core.compute(a, b, layout, opts, _cov(covariates, a.shape[1]))
     return (r, pv) if pvalues else r
 
 
-def pair(x, y, method="pearson", pvalues=False, nan_policy="pairwise", **params):
-    """Correlation of two vectors; ``(r, p)`` when ``pvalues`` is true."""
+def pair(x, y, method="pearson", pvalues=False, nan_policy="pairwise", covariates=None, **params):
+    """Correlation of two vectors; ``(r, p)`` when ``pvalues`` is true.
+
+    For ``xi`` this is ξ(x → y): how well y is a function of x.
+    """
     xa, ya = _as_f64(x, 1, "x"), _as_f64(y, 1, "y")
     r, pv, _ = _core.pair(np.ascontiguousarray(xa), np.ascontiguousarray(ya),
-                          _options(method, pvalues, nan_policy, params))
+                          _options(method, pvalues, nan_policy, params), _cov(covariates, xa.shape[0]))
     return (r, pv) if pvalues else r
 
 
@@ -100,7 +125,7 @@ def _legacy(method: str, kind: str):
     return f
 
 
-LEGACY_NAMES = [f"{m}_{k}" for k in _KINDS for m in METHODS]
+LEGACY_NAMES = [f"{m}_{k}" for k in _KINDS for m in _LEGACY_METHODS]
 for _name in LEGACY_NAMES:
     globals()[_name] = _legacy(*_name.split("_", 1))
 

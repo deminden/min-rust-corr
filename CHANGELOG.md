@@ -1,5 +1,32 @@
 # Changelog
 
+## Unreleased (0.4.0)
+
+### Added
+
+- Gaussian-rank correlation (`gaussian_rank`): Pearson on normal scores
+  Φ⁻¹(R/(n+1)), with t-test p-values.
+- Partial (covariate-adjusted) correlation for Pearson, Spearman and Gaussian
+  rank: `Correlator::covariates`, CLI `--covariates FILE` (columns matched by
+  sample name), Python `covariates=`. P-values use n − 2 − k degrees of freedom.
+- Proportionality ρp (`rho`) for compositional data with clr transform and
+  `pseudocount`; `mincorr::log_clr` for whole-table preprocessing.
+- Chatterjee's ξ (`xi`), asymmetric (cell (i, j) = ξ(row i → row j)) or
+  symmetrised, with tie-aware asymptotic p-values; matches `XICOR::xicor`.
+- Distance correlation (`dcor`) in O(n log n) per pair; matches `energy::dcor`.
+- `stats::normal::quantile` (inverse normal CDF).
+- CLI `--pseudocount`, `--no-clr`, `--xi-symmetric`; the edge list omits the
+  diagonal of asymmetric statistics.
+
+### Changed
+
+- `RowTransform` gained `combine` and `pvalue` (with defaults) and
+  `PairKernel`/`Engine` gained `symmetric`; layouts compute every cell for
+  asymmetric statistics and `upper` rejects them.
+- `Method` has new variants; `MethodSettings` new fields.
+- Pearson and Spearman share one score-based transform (`methods::scores`);
+  results are unchanged.
+
 ## 0.3.1 — 2026-11-26
 
 ### Performance

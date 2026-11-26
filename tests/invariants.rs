@@ -4,21 +4,37 @@
 
 mod common;
 use common::load;
-use mincorr::{CorrError, Correlator, Method, NanPolicy, PvalueSpec, packed_index};
+use mincorr::{
+    ChatterjeeParams, CorrError, Correlator, Method, NanPolicy, ProportionalityParams, PvalueSpec,
+    packed_index,
+};
 use ndarray::{Array2, s};
 
 pub fn methods() -> Vec<Method> {
-    ["pearson", "spearman", "kendall", "bicor", "hellcor"]
-        .iter()
-        .map(|m| Method::from_name(m).unwrap())
-        .collect()
+    let mut m: Vec<Method> =
+        ["pearson", "spearman", "kendall", "bicor", "hellcor", "gaussian_rank", "xi", "dcor"]
+            .iter()
+            .map(|m| Method::from_name(m).unwrap())
+            .collect();
+    m.push(Method::Chatterjee(ChatterjeeParams { symmetric: true }));
+    // Log-ratio input used as is: the pair and matrix forms then agree.
+    m.push(Method::Proportionality(ProportionalityParams { clr: false, ..Default::default() }));
+    m
 }
 
 fn pv(m: &Method) -> PvalueSpec {
-    if m.is_pairwise() && m.name() == "hellcor" {
-        PvalueSpec::MonteCarlo { samples: 99, seed: 7 }
-    } else {
-        PvalueSpec::Analytic
+    match m {
+        Method::Hellcor(_) => PvalueSpec::MonteCarlo { samples: 99, seed: 7 },
+        Method::Proportionality(_) | Method::DistanceCorrelation => PvalueSpec::None,
+        _ => PvalueSpec::Analytic,
+    }
+}
+
+fn same_p(a: &Option<Array2<f64>>, b: &Option<Array2<f64>>) -> bool {
+    match (a, b) {
+        (Some(a), Some(b)) => same(a, b),
+        (None, None) => true,
+        _ => false,
     }
 }
 
@@ -48,8 +64,18 @@ fn layouts_agree() {
                     let ok = f.to_bits() == g.to_bits() || (f.is_nan() && g.is_nan());
                     assert!(ok, "{} cross({i},{j}): {f} vs {g}", m.name());
                 }
-                assert!(f.to_bits() == full.corr[[j, i]].to_bits() || f.is_nan(), "{} symmetry", m.name());
+                if m.is_symmetric() {
+                    assert!(
+                        f.to_bits() == full.corr[[j, i]].to_bits() || f.is_nan(),
+                        "{} symmetry",
+                        m.name()
+                    );
+                }
             }
+        }
+        if !m.is_symmetric() {
+            assert!(matches!(c.upper(x.view()), Err(CorrError::Unsupported(_))));
+            continue;
         }
         let up = c.upper(x.view()).unwrap();
         for i in 0..n {
@@ -61,19 +87,21 @@ fn layouts_agree() {
         for (br, cache) in [(1, false), (3, false), (5, true), (100, false), (100, true)] {
             let c = if cache { c.clone().triangle_cache(usize::MAX) } else { c.clone() };
             let mut got = Array2::<f64>::zeros((n, n));
-            let mut gotp = Array2::<f64>::zeros((n, n));
+            let mut gotp = full.pvalues.as_ref().map(|_| Array2::<f64>::zeros((n, n)));
             c.clone()
                 .block_rows(br)
                 .full_blocks(x.view(), |b| {
                     for i in b.rows.clone() {
                         got.row_mut(i).assign(&ndarray::ArrayView1::from(b.corr_row(i)));
-                        gotp.row_mut(i).assign(&ndarray::ArrayView1::from(b.pvalue_row(i).unwrap()));
+                        if let Some(g) = gotp.as_mut() {
+                            g.row_mut(i).assign(&ndarray::ArrayView1::from(b.pvalue_row(i).unwrap()));
+                        }
                     }
                     Ok(())
                 })
                 .unwrap();
             assert!(same(&got, &full.corr), "{} blocks {br}", m.name());
-            assert!(same(&gotp, full.pvalues.as_ref().unwrap()), "{} block p {br}", m.name());
+            assert!(same_p(&gotp, &full.pvalues), "{} block p {br}", m.name());
         }
     }
 }
@@ -88,7 +116,7 @@ fn thread_count_determinism() {
         };
         let (a, b, c) = (run(1), run(2), run(8));
         assert!(same(&a.corr, &b.corr) && same(&a.corr, &c.corr), "{}", m.name());
-        assert!(same(a.pvalues.as_ref().unwrap(), c.pvalues.as_ref().unwrap()), "{} p", m.name());
+        assert!(same_p(&a.pvalues, &c.pvalues) && same_p(&a.pvalues, &b.pvalues), "{} p", m.name());
     }
 }
 
@@ -97,9 +125,8 @@ fn degenerate_rows_and_diagonal() {
     let x = data();
     for m in methods() {
         let out = Correlator::new(m.clone()).pvalues(pv(&m)).full(x.view()).unwrap();
-        let p = out.pvalues.unwrap();
         for i in 0..x.nrows() {
-            assert!(p[[i, i]].is_nan());
+            assert!(out.pvalues.as_ref().is_none_or(|p| p[[i, i]].is_nan()));
             if i == 3 {
                 assert!(out.corr.row(3).iter().all(|v| v.is_nan()), "{} constant row", m.name());
             } else {

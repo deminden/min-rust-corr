@@ -4,6 +4,7 @@ mod args;
 mod input;
 mod naming;
 mod output;
+mod prepare;
 mod run;
 mod sinks;
 mod subset;

@@ -5,7 +5,7 @@ mod edges;
 mod matrix;
 mod sinkfile;
 
-pub use edges::{EdgeFilter, EdgesSink};
+pub use edges::{Cells, EdgeFilter, EdgesSink};
 pub use matrix::{MatrixSink, NpyWriter, TsvWriter};
 pub use sinkfile::Out;
 

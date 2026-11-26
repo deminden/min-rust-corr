@@ -10,16 +10,20 @@
 tool and a Python package. Rows are variables (genes, features), columns are
 observations (samples).
 
-- **Five methods:** Pearson, Spearman, Kendall tau-b, biweight midcorrelation
-  (bicor) and the Hellinger correlation (hellcor).
+- **Nine methods:** Pearson, Spearman, Kendall tau-b, biweight midcorrelation
+  (bicor), Hellinger correlation, Gaussian-rank correlation, proportionality
+  ρp, Chatterjee's ξ and distance correlation, plus **partial correlation**
+  (adjusting Pearson, Spearman or Gaussian rank for covariates).
 - **Every layout:** full matrix, cross matrix (A × B), packed upper triangle,
   single pairs, or streamed row blocks that never hold the whole matrix in RAM.
-- **P-values:** Student t, tie-corrected normal (Kendall) or a Monte-Carlo
+- **P-values:** Student t (with n − 2 − k df for k covariates),
+  tie-corrected normal (Kendall), the asymptotic null of ξ, or a Monte-Carlo
   permutation null (hellcor).
 - **Missing values handled one way for all methods:** pairwise-complete
   (default), propagate or error.
-- **Validated against R:** `stats::cor`, `cor.test`, `WGCNA::bicor` and
-  `HellCor::HellCor` on every test dataset ([parity](docs/parity.md)).
+- **Validated against R:** `stats::cor`, `cor.test`, `lm` residuals,
+  `WGCNA::bicor`, `HellCor::HellCor`, `energy::dcor` and `XICOR::xicor` on
+  every test dataset ([parity](docs/parity.md)).
 - **Fast and deterministic:** parallel, bit-identical for any thread count;
   hellcor is ~120× faster than the previous release ([benchmarks](docs/benchmarks.md)).
 
@@ -32,6 +36,15 @@ observations (samples).
 | Kendall tau-b | `kendall` | S / √((n₀−n₁)(n₀−n₂)), tie-corrected | Knight (1966) |
 | Biweight midcorrelation | `bicor` | median/MAD-weighted Pearson, robust to outliers | Langfelder & Horvath (2012) |
 | Hellinger correlation | `hellcor` | detects any (also non-monotone) dependence, η ∈ [0, 1] | Geenens & Lafaye de Micheaux (2022) |
+| Gaussian rank | `gaussian_rank` | Pearson on normal scores Φ⁻¹(R/(n+1)); robust, fully efficient at the normal | Boudt, Cornelissen & Croux (2012) |
+| Proportionality | `rho` | ρp = 1 − var(x−y)/(var x + var y) on clr-transformed compositions | Lovell et al. (2015); Erb & Notredame (2016) |
+| Chatterjee's ξ | `xi` | 1 − n Σ\|r₍ᵢ₊₁₎−r₍ᵢ₎\| / (2 Σ lᵢ(n−lᵢ)): is y a function of x? Asymmetric, ∈ [−½, 1] | Chatterjee (2021) |
+| Distance correlation | `dcor` | dCov(x,y)/√(dVar(x) dVar(y)) on double-centred distances; 0 iff independent; O(n log n) per pair | Székely, Rizzo & Bakirov (2007); Huo & Székely (2016) |
+
+Partial correlation: `Correlator::covariates(z)` (CLI `--covariates file.tsv`,
+Python `covariates=`) residualises every row on the covariates — after the
+rank or normal-score transform for Spearman and Gaussian rank — before
+correlating.
 
 ## Install
 
@@ -57,6 +70,8 @@ mincorr expr.tsv.gz spearman                        # -> expr_spearman_correlati
 mincorr expr.tsv.gz kendall --threads 8 --with-pvalues
 mincorr expr.tsv.gz hellcor --with-pvalues --mc-samples 2000 --format npy -o hell.npy
 mincorr expr.tsv.gz bicor --subset-rows TP53,MYC --subset-vs-all --format edges --top-k 50
+mincorr expr.tsv.gz spearman --covariates batch_age.tsv --with-pvalues  # partial
+mincorr counts.tsv rho --pseudocount 1                # proportionality on clr(counts + 1)
 mincorr --help
 ```
 
@@ -103,12 +118,16 @@ r = mincorr.corr(x, method="spearman")                     # (100, 100)
 r, p = mincorr.corr(x, method="kendall", pvalues=True)
 u = mincorr.corr(x, method="bicor", layout="upper")       # packed upper triangle
 c = mincorr.corr(x[:5], x, method="hellcor", layout="cross")
+d = mincorr.corr(x, method="dcor")
+rp = mincorr.corr(x, method="pearson", covariates=x[:2])  # partial correlation
 ```
 
 ## Behaviour in brief
 
 - Degenerate rows (fewer than two finite values, or constant) give NaN for every
   pair, including their own diagonal entry; otherwise the diagonal is exactly 1.
+- ξ is asymmetric: cell (i, j) is ξ(row i → row j); `--xi-symmetric` /
+  `symmetric=True` reports max(ξ(x,y), ξ(y,x)).
 - Diagonal p-values are NaN; p-values need at least 3 complete observations.
 - With missing values, each pair uses its own complete observations and its own
   sample size for the p-value.

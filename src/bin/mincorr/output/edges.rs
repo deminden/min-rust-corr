@@ -1,6 +1,6 @@
 //! Long-format edge list: `row  col  r  [p]`, optionally thresholded and
 //! limited to the strongest K edges per row. Symmetric runs write the
-//! upper triangle only (no diagonal).
+//! upper triangle only; single-matrix runs never write the diagonal.
 
 use super::{Out, Sink, format_value};
 use anyhow::Result;
@@ -19,12 +19,23 @@ pub struct EdgeFilter {
     pub top_k: Option<usize>,
 }
 
+/// Which cells of a block become edges.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Cells {
+    /// Single matrix, symmetric statistic: j > i.
+    Upper,
+    /// Single matrix, asymmetric statistic: j ≠ i.
+    OffDiagonal,
+    /// Cross matrix: every cell.
+    All,
+}
+
 /// Edge-list sink.
 pub struct EdgesSink {
     out: Out,
     row_ids: Arc<Vec<String>>,
     col_ids: Arc<Vec<String>>,
-    symmetric: bool,
+    cells: Cells,
     filter: EdgeFilter,
     digits: Option<usize>,
     cand: Vec<(usize, f64, f64)>,
@@ -37,13 +48,13 @@ impl EdgesSink {
         mut out: Out,
         row_ids: Arc<Vec<String>>,
         col_ids: Arc<Vec<String>>,
-        symmetric: bool,
+        cells: Cells,
         with_p: bool,
         filter: EdgeFilter,
         digits: Option<usize>,
     ) -> Result<Self> {
         writeln!(out, "row\tcol\tr{}", if with_p { "\tp" } else { "" })?;
-        Ok(Self { out, row_ids, col_ids, symmetric, filter, digits, cand: Vec::new(), line: String::new() })
+        Ok(Self { out, row_ids, col_ids, cells, filter, digits, cand: Vec::new(), line: String::new() })
     }
 
     fn keep(&self, r: f64, p: f64) -> bool {
@@ -81,9 +92,12 @@ impl Sink for EdgesSink {
     fn block(&mut self, b: &RowBlock<'_>) -> Result<()> {
         for i in b.rows.clone() {
             let (cr, pr) = (b.corr_row(i), b.pvalue_row(i));
-            let j0 = if self.symmetric { i + 1 } else { 0 };
+            let j0 = if self.cells == Cells::Upper { i + 1 } else { 0 };
             self.cand.clear();
             for j in j0..b.n_cols {
+                if j == i && self.cells == Cells::OffDiagonal {
+                    continue;
+                }
                 let p = pr.map_or(f64::NAN, |p| p[j]);
                 if self.keep(cr[j], p) {
                     self.cand.push((j, cr[j], p));

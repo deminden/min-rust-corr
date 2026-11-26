@@ -113,6 +113,10 @@ impl<K: PairKernel> Engine for PairEngine<'_, K> {
         self.side_b().state.len()
     }
 
+    fn symmetric(&self) -> bool {
+        self.k.symmetric()
+    }
+
     fn fill(
         &self,
         rows: Range<usize>,
@@ -123,7 +127,8 @@ impl<K: PairKernel> Engine for PairEngine<'_, K> {
     ) {
         let b = self.side_b();
         let want_p = pout.is_some();
-        let grid = Grid { sym: self.b.is_none(), a: &self.a.state, b: &b.state, upper: upper_only };
+        let upper = upper_only && self.k.symmetric();
+        let grid = Grid { sym: self.b.is_none(), a: &self.a.state, b: &b.state, upper };
         grid.fill(rows, out, pout, |i, j, _, _| {
             let st = self.pair(i, j, s);
             let r = if st.value.is_nan() { st.value } else { clamp_corr(st.value) };

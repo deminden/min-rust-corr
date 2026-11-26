@@ -5,12 +5,13 @@ use crate::engine::pairwise::{PairEngine, PairSide};
 use crate::engine::{PairKernel, RowTransform};
 use crate::error::Result;
 use crate::layout::{CorrOutput, PackedOutput, PairResult, RowBlock};
-use crate::methods::{MethodVisitor, check_pvalues, visit};
+use crate::methods::{Covariates, MethodVisitor, check_pvalues, visit};
 use crate::options::{Method, NanPolicy, PvalueSpec};
-use ndarray::ArrayView2;
+use ndarray::{Array2, ArrayView1, ArrayView2};
 
 mod exec;
 mod pair;
+mod prepare;
 
 /// Configured correlation computation.
 ///
@@ -28,6 +29,7 @@ pub struct Correlator {
     pvalues: PvalueSpec,
     block_rows: Option<usize>,
     triangle_cache: Option<usize>,
+    covariates: Option<Array2<f64>>,
 }
 
 impl Correlator {
@@ -40,6 +42,7 @@ impl Correlator {
             pvalues: PvalueSpec::None,
             block_rows: None,
             triangle_cache: None,
+            covariates: None,
         }
     }
 
@@ -67,6 +70,25 @@ impl Correlator {
     /// symmetric pair twice. Off by default (pure streaming).
     pub fn triangle_cache(mut self, bytes: usize) -> Self {
         self.triangle_cache = Some(bytes);
+        self
+    }
+
+    /// Adjust for covariates (partial correlation): `cov` has one row per
+    /// covariate and one column per observation. Every row is residualised
+    /// on the covariates (after the method's rank or normal-score
+    /// transform, which is also applied to the covariates) before
+    /// correlating; p-values use n − 2 − k degrees of freedom, k = rank of
+    /// the covariates. Pearson, Spearman and Gaussian rank only. Covariates
+    /// must be finite; data with missing values needs
+    /// [`NanPolicy::Propagate`] or [`NanPolicy::Error`].
+    pub fn covariates(mut self, cov: Array2<f64>) -> Self {
+        self.covariates = Some(cov);
+        self
+    }
+
+    /// The same configuration with another method.
+    pub fn method_replaced(mut self, method: Method) -> Self {
+        self.method = method;
         self
     }
 
@@ -124,7 +146,39 @@ impl Correlator {
     /// Correlation of two vectors.
     pub fn pair(&self, x: &[f64], y: &[f64]) -> Result<PairResult> {
         check_pvalues(&self.method, &self.pvalues)?;
-        visit(&self.method, pair::PairV { x, y, policy: self.nan_policy, pvalues: self.pvalues })
+        if x.len() != y.len() {
+            return Err(crate::CorrError::ShapeMismatch {
+                what: "vector length",
+                left: x.len(),
+                right: y.len(),
+            });
+        }
+        let pv = pair::PairV { x, y, policy: self.nan_policy, pvalues: self.pvalues };
+        let both = ndarray::stack![ndarray::Axis(0), ArrayView1::from(x), ArrayView1::from(y)];
+        self.check_covariates(&[both.view()])?;
+        let cov = self.cov(x.len());
+        match prepare::proportional(&self.method, &[both.view()]).and_then(|t| t.into_iter().next()) {
+            Some(t) => {
+                let (tx, ty) = (t.row(0).to_vec(), t.row(1).to_vec());
+                visit(&self.method, cov, pair::PairV { x: &tx, y: &ty, ..pv })
+            }
+            None => visit(&self.method, cov, pv),
+        }
+    }
+
+    fn cov(&self, n_obs: usize) -> Option<Covariates<'_>> {
+        self.covariates.as_ref().map(|c| Covariates { data: c.view(), n_obs })
+    }
+
+    /// Covariate adjustment cannot drop observations per pair.
+    fn check_covariates(&self, parts: &[ArrayView2<'_, f64>]) -> Result<()> {
+        let missing = parts.iter().any(|p| crate::prep::validity::first_nonfinite(*p).is_some());
+        if self.covariates.is_some() && self.nan_policy == NanPolicy::PairwiseComplete && missing {
+            return Err(crate::CorrError::Unsupported(
+                "covariates with missing values: use the propagate or error NaN policy".into(),
+            ));
+        }
+        Ok(())
     }
 
     fn run<U: exec::EngineUser>(
@@ -138,7 +192,16 @@ impl Correlator {
             Some(b) => crate::engine::dispatch::check_cross(a, b)?,
             None => crate::engine::dispatch::check_shape(a, "matrix")?,
         }
-        visit(&self.method, Build { a, b, policy: self.nan_policy, pvalues: self.pvalues, user })
+        let parts: Vec<_> = std::iter::once(a).chain(b).collect();
+        self.check_covariates(&parts)?;
+        let (policy, pvalues, cov) = (self.nan_policy, self.pvalues, self.cov(a.ncols()));
+        match prepare::proportional(&self.method, &parts) {
+            Some(t) => {
+                let (a, b) = (t[0].view(), t.get(1).map(|m| m.view()));
+                visit(&self.method, cov, Build { a, b, policy, pvalues, user })
+            }
+            None => visit(&self.method, cov, Build { a, b, policy, pvalues, user }),
+        }
     }
 }
 

@@ -1,7 +1,8 @@
 #!/usr/bin/env Rscript
 # make_fixtures.R — generate black-box reference fixtures for mincorr tests.
 #
-# Uses only public R APIs (stats, WGCNA::bicor/bicorAndPvalue, HellCor::HellCor)
+# Uses only public R APIs (stats, WGCNA::bicor/bicorAndPvalue, HellCor::HellCor,
+# energy::dcor, XICOR::xicor)
 # as numerical oracles. Writes small deterministic TSV fixtures into
 # tests/fixtures/ plus MANIFEST.json (R/package versions, seed).
 #
@@ -137,6 +138,76 @@ close(con)
 rk <- t(apply(datasets$ties_15x30, 1, rank, ties.method = "average"))
 write_matrix(rk, "ties_15x30__ranks")
 
+
+# ------------------------------------------- methods added in v0.4 --
+# Gaussian rank, partial (covariate-adjusted) Pearson/Spearman, Chatterjee's
+# xi, distance correlation and proportionality rho. Base-R formulas follow
+# the published definitions; energy::dcor and XICOR::xicor are used as
+# black-box oracles where installed.
+have_energy <- requireNamespace("energy", quietly = TRUE)
+have_xicor <- requireNamespace("XICOR", quietly = TRUE)
+if (!have_energy) skipped <- c(skipped, "dcor (energy not installed)")
+if (!have_xicor) skipped <- c(skipped, "xi oracle (XICOR not installed)")
+
+pair_apply <- function(m, f) {
+  n <- nrow(m)
+  out <- matrix(NA_real_, n, n)
+  for (i in seq_len(n)) for (j in seq_len(n)) {
+    if (i != j) out[i, j] <- tryCatch(f(m[i, ], m[j, ]), error = function(e) NA_real_)
+  }
+  out
+}
+nscore <- function(v) qnorm(rank(v) / (length(v) + 1))
+# xi(x -> y), ties in x ordered by index (the paper breaks them at random).
+xi_r <- function(x, y) {
+  n <- length(x)
+  o <- order(x, seq_len(n))
+  r <- sapply(y, function(t) sum(y <= t))[o]
+  l <- sapply(y, function(t) sum(y >= t))
+  1 - n * sum(abs(diff(r))) / (2 * sum(l * (n - l)))
+}
+resid_on <- function(v, Z) as.numeric(resid(lm(v ~ Z)))
+partial_p <- function(r, n, k) {
+  df <- n - 2 - k
+  t <- r * sqrt(df / (1 - r^2))
+  2 * pt(-abs(t), df)
+}
+complete <- function(m) !anyNA(m) && ncol(m) >= 6
+
+set.seed(SEED + 4L)
+for (nm in names(datasets)) {
+  m <- datasets[[nm]]
+  if (!complete(m)) next
+  g <- t(apply(m, 1, nscore))
+  write_matrix(suppressWarnings(cor(t(g))), paste0(nm, "__gaussian_rank_r"))
+  write_matrix(pair_p(g, "pearson"), paste0(nm, "__gaussian_rank_p"))
+
+  Z <- matrix(rnorm(2 * ncol(m)), nrow = 2)
+  write_matrix(Z, paste0(nm, "__covariates"))
+  for (method in c("pearson", "spearman")) {
+    mm <- if (method == "spearman") t(apply(m, 1, rank)) else m
+    zz <- if (method == "spearman") t(apply(Z, 1, rank)) else Z
+    res <- t(apply(mm, 1, resid_on, Z = t(zz)))
+    r <- suppressWarnings(cor(t(res)))
+    write_matrix(r, paste0(nm, "__partial_", method, "_r"))
+    write_matrix(partial_p(r, ncol(m), 2), paste0(nm, "__partial_", method, "_p"))
+  }
+
+  write_matrix(pair_apply(m, xi_r), paste0(nm, "__xi_r"))
+  no_ties <- all(apply(m, 1, function(v) !anyDuplicated(v)))
+  if (have_xicor && no_ties) {
+    xo <- function(x, y) unlist(XICOR::xicor(x, y, pvalue = TRUE, ties = TRUE)[c("xi", "pval")])
+    write_matrix(pair_apply(m, function(x, y) xo(x, y)[1]), paste0(nm, "__xi_xicor_r"))
+    write_matrix(pair_apply(m, function(x, y) xo(x, y)[2]), paste0(nm, "__xi_xicor_p"))
+  }
+  if (have_energy) write_matrix(pair_apply(m, energy::dcor), paste0(nm, "__dcor_r"))
+  if (all(m > 0)) {
+    lg <- log(m)
+    clr <- sweep(lg, 2, colMeans(lg))
+    write_matrix(pair_apply(clr, function(x, y) 1 - var(x - y) / (var(x) + var(y))), paste0(nm, "__rho_r"))
+  }
+}
+
 # ------------------------------------------------------------- manifest --
 pv <- function(p) if (requireNamespace(p, quietly = TRUE)) as.character(packageVersion(p)) else NA
 q <- function(s) if (is.na(s)) "null" else paste0("\"", s, "\"")
@@ -146,6 +217,8 @@ manifest <- paste0("{\n",
   "  \"r_version\": ", q(R.version.string), ",\n",
   "  \"WGCNA\": ", q(pv("WGCNA")), ",\n",
   "  \"HellCor\": ", q(pv("HellCor")), ",\n",
+  "  \"energy\": ", q(pv("energy")), ",\n",
+  "  \"XICOR\": ", q(pv("XICOR")), ",\n",
   "  \"datasets\": [", paste0("\"", names(datasets), "\"", collapse = ", "), "],\n",
   "  \"skipped\": [", paste0("\"", skipped, "\"", collapse = ", "), "]\n",
   "}\n")

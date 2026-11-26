@@ -1,6 +1,7 @@
 //! Per-row preparation helpers shared by all methods: validity census,
 //! ranking, selection (median/quantile) and standardisation.
 
+pub mod logratio;
 pub mod rank;
 pub mod select;
 pub mod standardize;

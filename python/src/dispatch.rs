@@ -1,6 +1,7 @@
 //! Generic entry points; the GIL is released during computation.
 
 use crate::convert::{Options, core_err, correlator};
+use mincorr::Correlator;
 use numpy::{IntoPyArray, PyReadonlyArray1, PyReadonlyArray2};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
@@ -11,16 +12,25 @@ fn array<'py, A: IntoPyArray>(py: Python<'py>, a: A) -> Bound<'py, PyAny> {
     a.into_pyarray(py).into_any()
 }
 
-/// compute(data, other, layout, options) -> (corr, pvalues | None)
+fn with_covariates(c: Correlator, cov: Option<PyReadonlyArray2<'_, f64>>) -> Correlator {
+    match cov {
+        Some(z) => c.covariates(z.as_array().to_owned()),
+        None => c,
+    }
+}
+
+/// compute(data, other, layout, options, covariates) -> (corr, pvalues | None)
 #[pyfunction]
+#[pyo3(signature = (data, other, layout, options, covariates=None))]
 pub fn compute<'py>(
     py: Python<'py>,
     data: PyReadonlyArray2<'py, f64>,
     other: Option<PyReadonlyArray2<'py, f64>>,
     layout: &str,
     options: Options,
+    covariates: Option<PyReadonlyArray2<'py, f64>>,
 ) -> PyResult<Out<'py>> {
-    let c = correlator(&options)?;
+    let c = with_covariates(correlator(&options)?, covariates);
     let a = data.as_array();
     match (layout, other.as_ref().map(|o| o.as_array())) {
         ("upper", None) => {
@@ -41,15 +51,17 @@ pub fn compute<'py>(
     }
 }
 
-/// pair(x, y, options) -> (r, p | None, n_eff)
+/// pair(x, y, options, covariates) -> (r, p | None, n_eff)
 #[pyfunction]
+#[pyo3(signature = (x, y, options, covariates=None))]
 pub fn pair(
     py: Python<'_>,
     x: PyReadonlyArray1<'_, f64>,
     y: PyReadonlyArray1<'_, f64>,
     options: Options,
+    covariates: Option<PyReadonlyArray2<'_, f64>>,
 ) -> PyResult<(f64, Option<f64>, usize)> {
-    let c = correlator(&options)?;
+    let c = with_covariates(correlator(&options)?, covariates);
     let (xa, ya) = (x.as_array(), y.as_array());
     let r = py.detach(|| match (xa.as_slice(), ya.as_slice()) {
         (Some(xs), Some(ys)) => c.pair(xs, ys),

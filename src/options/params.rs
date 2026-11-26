@@ -112,11 +112,66 @@ pub struct MethodSettings {
     pub lmax: usize,
     /// Bicor: maximum fraction of outliers per side of the median.
     pub max_p_outliers: f64,
+    /// Proportionality: pseudocount added before taking logs.
+    pub pseudocount: f64,
+    /// Proportionality: apply the centred log-ratio transform.
+    pub clr: bool,
+    /// Chatterjee: symmetrised max(ξ(x,y), ξ(y,x)).
+    pub xi_symmetric: bool,
 }
 
 impl Default for MethodSettings {
     fn default() -> Self {
         let (h, b) = (HellcorParams::default(), BicorParams::default());
-        Self { alpha: h.alpha, kmax: h.kmax, lmax: h.lmax, max_p_outliers: b.max_p_outliers }
+        let pr = ProportionalityParams::default();
+        Self {
+            alpha: h.alpha,
+            kmax: h.kmax,
+            lmax: h.lmax,
+            max_p_outliers: b.max_p_outliers,
+            pseudocount: pr.pseudocount,
+            clr: pr.clr,
+            xi_symmetric: ChatterjeeParams::default().symmetric,
+        }
     }
+}
+
+/// Parameters of the proportionality coefficient ρp.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ProportionalityParams {
+    /// Added to every value before the logarithm (0 = none; zeros then
+    /// become missing values).
+    pub pseudocount: f64,
+    /// Centred log-ratio: subtract from each log value the mean log of its
+    /// column (observation) over all rows. Disable when the input is
+    /// already log-ratio transformed (values are then used as is).
+    pub clr: bool,
+}
+
+impl Default for ProportionalityParams {
+    fn default() -> Self {
+        Self { pseudocount: 0.0, clr: true }
+    }
+}
+
+impl ProportionalityParams {
+    /// Validate ranges.
+    pub fn validate(&self) -> Result<()> {
+        if !(self.pseudocount.is_finite() && self.pseudocount >= 0.0) {
+            return Err(CorrError::InvalidParam {
+                name: "pseudocount",
+                reason: "must be finite and >= 0".into(),
+            });
+        }
+        Ok(())
+    }
+}
+
+/// Parameters of Chatterjee's ξ.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct ChatterjeeParams {
+    /// Report max(ξ(x, y), ξ(y, x)) so the matrix is symmetric. Off by
+    /// default: cell (i, j) is ξ(row i → row j), i.e. how well row j is a
+    /// function of row i.
+    pub symmetric: bool,
 }

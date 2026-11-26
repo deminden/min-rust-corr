@@ -8,7 +8,6 @@ use crate::error::Result;
 use crate::options::NanPolicy;
 use crate::prep::RowStatus;
 use crate::prep::validity::{gather_common, gather_finite, to_contiguous};
-use crate::stats::tdist::corr_t_pvalue;
 use ndarray::linalg::general_mat_mul;
 use ndarray::{Array2, ArrayView2, ArrayViewMut2, Axis, s};
 use rayon::prelude::*;
@@ -18,6 +17,7 @@ use std::ops::Range;
 pub struct GramSide<'a> {
     data: ArrayView2<'a, f64>,
     z: Array2<f64>,
+    sq: Vec<f64>,
     state: Vec<RowState>,
 }
 
@@ -49,7 +49,8 @@ impl<'a> GramSide<'a> {
                 }
             },
         );
-        Ok(Self { data, z, state })
+        let sq = z.rows().into_iter().map(|r| r.dot(&r)).collect();
+        Ok(Self { data, z, sq, state })
     }
 
     /// Number of rows.
@@ -96,7 +97,8 @@ impl<'a, T: RowTransform> GramEngine<'a, T> {
         if !ok {
             return (f64::NAN, n);
         }
-        (clamp_corr(dot(&s.tx, &s.ty)), n)
+        let r = self.t.combine(dot(&s.tx, &s.ty), dot(&s.tx, &s.tx), dot(&s.ty, &s.ty));
+        (clamp_corr(r), n)
     }
 }
 
@@ -140,9 +142,9 @@ impl<T: RowTransform> Engine for GramEngine<'_, T> {
         grid.fill(rows, out, pout, |i, j, cell, gemm| {
             let (r, n) = match cell {
                 Cell::Slow => self.slow_pair(i, j, s),
-                _ => (clamp_corr(gemm), m),
+                _ => (clamp_corr(self.t.combine(gemm, self.a.sq[i], b.sq[j])), m),
             };
-            (r, if want_p { corr_t_pvalue(r, n) } else { f64::NAN })
+            (r, if want_p { self.t.pvalue(r, n) } else { f64::NAN })
         });
     }
 }

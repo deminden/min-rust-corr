@@ -15,6 +15,9 @@ pub struct Options {
     kmax: usize,
     lmax: usize,
     max_p_outliers: f64,
+    pseudocount: f64,
+    clr: bool,
+    symmetric: bool,
     mc_samples: usize,
     seed: u64,
 }
@@ -26,8 +29,15 @@ pub fn core_err(e: mincorr::CorrError) -> PyErr {
 
 /// Build a correlator from the Python-side options.
 pub fn correlator(p: &Options) -> PyResult<Correlator> {
-    let settings =
-        MethodSettings { alpha: p.alpha, kmax: p.kmax, lmax: p.lmax, max_p_outliers: p.max_p_outliers };
+    let settings = MethodSettings {
+        alpha: p.alpha,
+        kmax: p.kmax,
+        lmax: p.lmax,
+        max_p_outliers: p.max_p_outliers,
+        pseudocount: p.pseudocount,
+        clr: p.clr,
+        xi_symmetric: p.symmetric,
+    };
     let method = Method::with_settings(&p.method, &settings).map_err(core_err)?;
     let spec = if p.pvalues { PvalueSpec::auto(&method, p.mc_samples, p.seed) } else { PvalueSpec::None };
     let nan: NanPolicy = p.nan_policy.parse().map_err(core_err)?;

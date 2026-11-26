@@ -1,6 +1,6 @@
 [package]
 name = "mincorr"
-description = "Fast correlation matrices (Pearson, Spearman, Kendall tau-b, biweight midcorrelation, Hellinger correlation): library and CLI"
+description = "Fast correlation matrices (Pearson, Spearman, Kendall, bicor, Hellinger, partial, distance correlation, Chatterjee xi, proportionality): library and CLI"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

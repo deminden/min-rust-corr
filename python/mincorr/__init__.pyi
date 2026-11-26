@@ -3,7 +3,8 @@ from typing import Any, Literal, Optional, Tuple, Union
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-Method = Literal["pearson", "spearman", "kendall", "bicor", "hellcor", "biweight", "hellinger"]
+Method = Literal["pearson", "spearman", "kendall", "bicor", "hellcor", "gaussian_rank", "rho", "xi", "dcor",
+                 "biweight", "hellinger", "gaussrank", "proportionality", "chatterjee", "distance"]
 Layout = Literal["full", "cross", "upper"]
 NanPolicy = Literal["pairwise", "propagate", "error"]
 F = NDArray[np.float64]
@@ -12,8 +13,8 @@ __version__: str
 METHODS: Tuple[str, ...]
 LEGACY_NAMES: list[str]
 
-def corr(data: ArrayLike, other: Optional[ArrayLike] = ..., method: Method = ..., layout: Layout = ..., pvalues: bool = ..., nan_policy: NanPolicy = ..., **params: Any) -> Union[F, Tuple[F, F]]: ...
-def pair(x: ArrayLike, y: ArrayLike, method: Method = ..., pvalues: bool = ..., nan_policy: NanPolicy = ..., **params: Any) -> Union[float, Tuple[float, float]]: ...
+def corr(data: ArrayLike, other: Optional[ArrayLike] = ..., method: Method = ..., layout: Layout = ..., pvalues: bool = ..., nan_policy: NanPolicy = ..., covariates: Optional[ArrayLike] = ..., **params: Any) -> Union[F, Tuple[F, F]]: ...
+def pair(x: ArrayLike, y: ArrayLike, method: Method = ..., pvalues: bool = ..., nan_policy: NanPolicy = ..., covariates: Optional[ArrayLike] = ..., **params: Any) -> Union[float, Tuple[float, float]]: ...
 
 def pearson_pair(x: ArrayLike, y: ArrayLike) -> float: ...
 def pearson_matrix(data: ArrayLike) -> F: ...

@@ -4,6 +4,8 @@
   "r_version": "R version 4.6.2 (2026-10-29)",
   "WGCNA": "1.74",
   "HellCor": "1.3",
+  "energy": "1.7.12",
+  "XICOR": "0.4.1",
   "datasets": ["normal_30x40", "normal_8x200", "lognormal_20x77", "ties_15x30", "outliers_15x50", "constant_rows_6x20", "na_12x40", "tiny_5x3", "tiny_5x4", "monotone_pairs"],
   "skipped": []
 }

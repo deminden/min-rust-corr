@@ -68,3 +68,20 @@ to 2.0 s on 2 threads.
 
 Analytic p-values cost more than the matrix product itself for Pearson-type
 methods (incomplete-beta evaluation per pair).
+
+## Methods added in 0.4
+
+2000 × 600 random uniform matrix, full layout, 2 threads (same Xeon VM),
+`cargo run --release --example timing -- <method> 2000 600`.
+
+| Method | Time | Cost per pair |
+|---|---|---|
+| pearson (reference) | 0.10 s | matrix product |
+| gaussian_rank | 0.23 s | matrix product (+ ranking and Φ⁻¹ per row) |
+| rho | 0.15 s | matrix product |
+| xi | 1.38 s (1.43 s with p-values) | O(n): one pass over the x order |
+| dcor | 12.1 s | O(n log n) Fenwick-tree pass (~6 µs at n = 600) |
+
+A direct O(n²) distance-matrix evaluation (as in `energy::dcor`) would need
+about n²/2 = 180 000 products per pair at n = 600, versus ~4 n log₂ n for the
+Fenwick pass.

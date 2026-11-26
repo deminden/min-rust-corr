@@ -13,12 +13,11 @@
 //! comparison with `WGCNA::bicor` output and reproduces it to ≤ 3.3e-16 on
 //! every fixture (see docs/parity.md).
 
-use super::pearson::Pearson;
 use crate::engine::RowTransform;
 use crate::options::{BicorParams, MadZeroFallback};
 use crate::prep::RowStatus;
 use crate::prep::select::{median, quantile};
-use crate::prep::standardize::scale_unit_norm;
+use crate::prep::standardize::{center_unit_norm, scale_unit_norm};
 
 /// Bicor row transform.
 #[derive(Debug, Clone, Copy, Default)]
@@ -48,7 +47,7 @@ impl RowTransform for Bicor {
         let mad = median(tmp);
         if !(mad > 0.0) {
             return match self.params.mad_zero_fallback {
-                MadZeroFallback::Pearson => Pearson.transform(x, out, &mut ()),
+                MadZeroFallback::Pearson => center_unit_norm(x, out),
                 MadZeroFallback::Nan => {
                     out.fill(0.0);
                     RowStatus::Degenerate
