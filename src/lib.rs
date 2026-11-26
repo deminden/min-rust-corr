@@ -29,3 +29,8 @@ pub use options::{
     BicorParams, HellcorCriterion, HellcorParams, MadZeroFallback, Method, MethodSettings, NanPolicy,
     PvalueSpec,
 };
+
+/// Compiles and runs the Rust example in README.md as a doctest.
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+pub struct ReadmeDoctests;

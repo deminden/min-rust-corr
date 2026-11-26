@@ -22,6 +22,9 @@ from the author's own code.
   (pandas), type stubs; accepts float32, Fortran-ordered and strided arrays.
 - `HellcorCriterion` (normalised leave-one-out by default, matching HellCor; the paper's MISE criterion as an option).
 - Reference fixtures from R, property tests, CI on three OSes, cargo-deny.
+- Release workflow: prebuilt `mincorr` binaries for Linux (static), macOS and
+  Windows and Python wheels attached to GitHub Releases; automated crates.io
+  and (optional) PyPI publishing.
 
 ### Changed (breaking)
 

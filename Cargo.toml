@@ -24,6 +24,10 @@ include = [
   "CHANGELOG.md",
 ]
 
+[package.metadata.docs.rs]
+# Library documentation only; the CLI is documented by `mincorr --help`.
+no-default-features = true
+
 [features]
 default = ["cli"]
 ## The `mincorr` command-line tool (disable with `default-features = false`

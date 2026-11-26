@@ -1,83 +1,102 @@
-name: ci
+name: CI
 
 on:
   push:
+    branches: ["**"]
+    tags-ignore: ["**"]
   pull_request:
   schedule:
-    - cron: "17 3 * * *"
+    - cron: "17 3 * * *" # nightly: also runs the slow statistical tests
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  fmt:
+  lint:
+    name: fmt, clippy, docs, file sizes
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-        with: { components: rustfmt }
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --all --check
-
-  clippy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with: { components: clippy }
       - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo clippy --lib --tests --no-default-features -- -D warnings
+      - run: cargo doc --no-deps
+        env:
+          RUSTDOCFLAGS: -D warnings
+      - run: tools/check_file_sizes.sh
 
   test:
+    name: test (${{ matrix.os }}, ${{ matrix.toolchain }})
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        toolchain: [stable, "1.85"]
+        toolchain: [stable]
+        include:
+          - os: ubuntu-latest
+            toolchain: "1.85" # MSRV
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
-        with: { toolchain: "${{ matrix.toolchain }}" }
-      - run: cargo test --workspace --exclude mincorr-py
-      - run: cargo test --lib --tests --no-default-features
+        with:
+          toolchain: ${{ matrix.toolchain }}
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --workspace --exclude mincorr-py --locked
+      - run: cargo test --lib --tests --no-default-features --locked
+      - if: github.event_name == 'schedule' && matrix.os == 'ubuntu-latest' && matrix.toolchain == 'stable'
+        run: cargo test --release --locked -- --ignored
 
-  nightly-statistical:
-    if: github.event_name == 'schedule'
+  python:
+    name: python (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build and test
+        shell: bash
+        working-directory: python
+        run: |
+          python -m venv .venv
+          if [ -f .venv/bin/activate ]; then . .venv/bin/activate; else . .venv/Scripts/activate; fi
+          pip install maturin pytest numpy scipy pandas
+          maturin develop --release
+          pytest -q tests
+
+  package:
+    name: crates.io dry run
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo test --release -p mincorr -- --ignored
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo publish --dry-run --locked
 
   deny:
+    name: licences and sources
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: EmbarkStudios/cargo-deny-action@v2
-        with: { command: check licenses bans sources }
-
-  sizes:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: ./tools/check_file_sizes.sh
-
-  docs:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - run: cargo doc --workspace --no-deps
-        env: { RUSTDOCFLAGS: "-D warnings" }
-
-  python:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.12" }
-      - uses: dtolnay/rust-toolchain@stable
-      - run: |
-          python -m venv .venv
-          . .venv/bin/activate
-          pip install maturin pytest numpy scipy pandas
-          cd python && maturin develop --release && pytest -q tests
+        with:
+          command: check licenses bans sources

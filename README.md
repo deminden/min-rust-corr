@@ -1,129 +1,129 @@
-# mincorr — fast correlation matrices
+# mincorr
 
-Minimal, fast Rust library, CLI and Python package for correlation matrices of
-wide numeric data (rows = variables such as genes, columns = observations such
-as samples):
+[![crates.io](https://img.shields.io/crates/v/mincorr.svg)](https://crates.io/crates/mincorr)
+[![docs.rs](https://img.shields.io/docsrs/mincorr)](https://docs.rs/mincorr)
+[![PyPI](https://img.shields.io/pypi/v/mincorrpy.svg)](https://pypi.org/project/mincorrpy/)
+[![CI](https://github.com/deminden/min-rust-corr/actions/workflows/ci.yml/badge.svg)](https://github.com/deminden/min-rust-corr/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-| Method | Definition | Reference |
-|---|---|---|
-| Pearson | r = Σ(x−x̄)(y−ȳ) / √(Σ(x−x̄)² Σ(y−ȳ)²) | — |
-| Spearman | Pearson on average ranks | — |
-| Kendall tau-b | S / √((n₀−n₁)(n₀−n₂)), tie-corrected | Knight (1966); Kendall, *Rank Correlation Methods* |
-| bicor | biweight midcorrelation: median/MAD-weighted Pearson | Wilcox (2012); Langfelder & Horvath (2012) |
-| hellcor | Hellinger correlation η from a Legendre-series estimate of √copula density | Geenens & Lafaye de Micheaux (2022) |
+**Fast correlation matrices for wide data** — a Rust library, a command-line
+tool and a Python package. Rows are variables (genes, features), columns are
+observations (samples).
 
-Every method is available in **full**, **cross** (A × B) and **packed upper
-triangle** layouts, with optional **p-values** (Student t, tie-corrected normal,
-or Monte-Carlo permutation null for hellcor), three **missing-value policies**,
-and **streamed block output** so a 20 000 × 20 000 matrix never has to sit in RAM.
+- **Five methods:** Pearson, Spearman, Kendall tau-b, biweight midcorrelation
+  (bicor) and the Hellinger correlation (hellcor).
+- **Every layout:** full matrix, cross matrix (A × B), packed upper triangle,
+  single pairs, or streamed row blocks that never hold the whole matrix in RAM.
+- **P-values:** Student t, tie-corrected normal (Kendall) or a Monte-Carlo
+  permutation null (hellcor).
+- **Missing values handled one way for all methods:** pairwise-complete
+  (default), propagate or error.
+- **Validated against R:** `stats::cor`, `cor.test`, `WGCNA::bicor` and
+  `HellCor::HellCor` on every test dataset ([parity](docs/parity.md)).
+- **Fast and deterministic:** parallel, bit-identical for any thread count;
+  hellcor is ~120× faster than the previous release ([benchmarks](docs/benchmarks.md)).
+
+## Methods
+
+| Method | Name | Definition | Reference |
+|---|---|---|---|
+| Pearson | `pearson` | r = Σ(x−x̄)(y−ȳ) / √(Σ(x−x̄)² Σ(y−ȳ)²) | — |
+| Spearman | `spearman` | Pearson on average ranks | — |
+| Kendall tau-b | `kendall` | S / √((n₀−n₁)(n₀−n₂)), tie-corrected | Knight (1966) |
+| Biweight midcorrelation | `bicor` | median/MAD-weighted Pearson, robust to outliers | Langfelder & Horvath (2012) |
+| Hellinger correlation | `hellcor` | detects any (also non-monotone) dependence, η ∈ [0, 1] | Geenens & Lafaye de Micheaux (2022) |
 
 ## Install
 
-One Rust crate, `mincorr`, provides both the library and the `mincorr`
-command-line tool; the Python package is `mincorrpy` (module `mincorr`).
+| What | How |
+|---|---|
+| Command-line tool (prebuilt) | download from [GitHub Releases](https://github.com/deminden/min-rust-corr/releases) — Linux (x86_64, aarch64; static), macOS (Apple silicon, Intel), Windows (x86_64, ARM64) |
+| Command-line tool (from source) | `cargo install mincorr` |
+| Rust library | `cargo add mincorr --no-default-features` |
+| Python | `pip install mincorrpy` (import as `mincorr`) |
 
-```bash
-cargo install mincorr                                   # CLI
-cargo add mincorr --no-default-features                 # library only (no CLI dependencies)
-pip install mincorrpy                                   # Python
-```
-
-The `cli` feature (on by default) builds the binary and pulls in its
-dependencies (clap, flate2, tar); library users can switch it off as above.
-The optional `blas` feature links a system BLAS for the matrix-product kernel.
-
-From source:
-
-```bash
-git clone https://github.com/deminden/min-rust-corr && cd min-rust-corr
-cargo build --release                                   # target/release/mincorr
-cd python && pip install maturin && maturin develop --release
-```
-
-Portable builds are the default; for a binary tuned to your CPU use
-`RUSTFLAGS="-C target-cpu=native" cargo install mincorr`. Minimum supported
+The default `cli` feature builds the `mincorr` binary; library users turn it off
+with `--no-default-features` to skip its dependencies. The optional `blas`
+feature links a system BLAS for the matrix-product kernel. Minimum supported
 Rust version: 1.85.
 
-## Quick start
+## Command line
 
-CLI (input: TSV/CSV, optionally `.gz` or single-file `.tar.gz`; first column = row IDs):
+Input: a TSV or CSV file (optionally `.gz`), first column = row IDs, header =
+sample names.
 
 ```bash
-mincorr expr.tsv.gz spearman                       # → expr_spearman_correlations.tsv.gz
-mincorr expr.tsv.gz kendall 8 --with-pvalues       # 8 threads, p-values in a sibling file
+mincorr expr.tsv.gz spearman                        # -> expr_spearman_correlations.tsv.gz
+mincorr expr.tsv.gz kendall --threads 8 --with-pvalues
 mincorr expr.tsv.gz hellcor --with-pvalues --mc-samples 2000 --format npy -o hell.npy
 mincorr expr.tsv.gz bicor --subset-rows TP53,MYC --subset-vs-all --format edges --top-k 50
-mincorr expr.tsv.gz pearson --legacy-tar           # v0.2 output layout and names
+mincorr --help
 ```
 
-Rust:
+Outputs are written block by block (`tsv`, `tsv.gz`, `npy` or a thresholded
+edge list), so memory stays at about one block regardless of the matrix size.
+v0.2 command lines keep working; `--legacy-tar` reproduces the v0.2 output files.
+
+## Rust
 
 ```rust
-use mincorr::{Correlator, Method, NanPolicy, PvalueSpec};
-let out = Correlator::new(Method::Kendall)
-    .pvalues(PvalueSpec::Analytic)
-    .nan_policy(NanPolicy::PairwiseComplete)
-    .full(data.view())?;                 // out.corr, out.pvalues: Array2<f64>
-Correlator::new(Method::Pearson).full_blocks(data.view(), |block| { /* write rows */ Ok(()) })?;
+use mincorr::{Correlator, Method, PvalueSpec};
+use ndarray::array;
+
+fn main() -> Result<(), mincorr::CorrError> {
+    let data = array![
+        [1.0, 2.0, 3.0, 4.0, 5.0],
+        [2.0, 1.0, 4.0, 3.0, 6.0],
+        [5.0, 3.0, 2.0, 2.5, 1.0],
+    ];
+    let out = Correlator::new(Method::Kendall).pvalues(PvalueSpec::Analytic).full(data.view())?;
+    let p = out.pvalues.as_ref().map_or(f64::NAN, |p| p[[0, 1]]);
+    println!("tau = {:.3}, p = {:.3}", out.corr[[0, 1]], p);
+
+    // Stream a large matrix in row blocks instead of holding it in memory.
+    Correlator::new(Method::Pearson).full_blocks(data.view(), |block| {
+        for i in block.rows.clone() {
+            let _row: &[f64] = block.corr_row(i); // write the row somewhere
+        }
+        Ok(())
+    })
+}
 ```
 
-Python:
+API documentation: [docs.rs/mincorr](https://docs.rs/mincorr).
+
+## Python
 
 ```python
+import numpy as np
 import mincorr
-r = mincorr.corr(x, method="spearman")                       # (n, n)
+
+x = np.random.default_rng(0).normal(size=(100, 40))       # 100 genes × 40 samples
+r = mincorr.corr(x, method="spearman")                     # (100, 100)
 r, p = mincorr.corr(x, method="kendall", pvalues=True)
-u = mincorr.corr(x, method="bicor", layout="upper")         # packed n(n+1)/2
-c = mincorr.corr(a, b, method="hellcor", layout="cross", alpha=6.0)
-r = mincorr.pearson_matrix(x)                                # all v0.2 names still work
+u = mincorr.corr(x, method="bicor", layout="upper")       # packed upper triangle
+c = mincorr.corr(x[:5], x, method="hellcor", layout="cross")
 ```
 
-`examples/gtex/` contains the GTEx tissue-processing pipeline (normalisation in
-R, correlations with the CLI).
+## Behaviour in brief
 
-## Semantics (summary)
+- Degenerate rows (fewer than two finite values, or constant) give NaN for every
+  pair, including their own diagonal entry; otherwise the diagonal is exactly 1.
+- Diagonal p-values are NaN; p-values need at least 3 complete observations.
+- With missing values, each pair uses its own complete observations and its own
+  sample size for the p-value.
 
-- Missing values: `pairwise` (default; each pair uses jointly finite
-  observations and its own n for p-values), `propagate`, or `error`.
-- Degenerate rows (fewer than two finite values or constant) give NaN for every
-  pair, including their diagonal entry; otherwise the diagonal is exactly 1.
-- Diagonal p-values are NaN; p-values for n_eff < 3 are NaN.
-- Same inputs and seed → bit-identical results for any number of threads.
-
-API documentation: <https://docs.rs/mincorr>. Full rules: [docs/semantics.md](docs/semantics.md). Hellcor algorithm:
-[docs/hellcor.md](docs/hellcor.md). Agreement with R:
-[docs/parity.md](docs/parity.md).
-
-## Performance notes
-
-- Pearson, Spearman and bicor are Gram methods: each row is transformed once into
-  a unit vector and correlations are blocked matrix products computed in
-  parallel. The default build uses ndarray's pure-Rust `matrixmultiply` kernel;
-  enable the `blas` cargo feature of `mincorr` to link a system BLAS instead.
-- Kendall uses pair-sign bitsets for n ≤ 128 and Knight's O(n log n) algorithm
-  otherwise; hellcor costs O(n² + n·K·L) per pair with per-sample-size tables.
-- Measured timings: [docs/benchmarks.md](docs/benchmarks.md).
-
-## Repository layout
-
-| Path | Contents |
-|---|---|
-| `src/` | library: `api` (Correlator), `engine` (Gram / pairwise engines), `methods`, `layout`, `prep`, `stats`, `options`, `compat` (v0.2 names) |
-| `src/bin/mincorr/` | command-line tool (`cli` feature) |
-| `python/` | Python package `mincorrpy` (PyO3 + maturin) |
-| `tests/`, `benches/`, `examples/timing.rs` | tests incl. R parity fixtures, Criterion benchmarks, timing example |
-| `docs/` | semantics, hellcor notes, parity, benchmarks, releasing |
-| `tools/` | fixture generator (R), size check, Python benchmark |
-| `examples/gtex/` | GTEx processing pipeline |
+Details: [semantics](docs/semantics.md) · [Hellinger correlation notes](docs/hellcor.md) ·
+[parity with R](docs/parity.md) · [benchmarks](docs/benchmarks.md) ·
+[changelog](CHANGELOG.md) · [development](docs/development.md).
 
 ## Licence
 
-MIT (see [LICENSE](LICENSE)). Versions up to and including 0.2.1 were
-GPL-2.0-or-later because their bicor, hellcor and Beta-function code were close
-ports of GPL R code. Version 0.3.0 replaces those parts with independent
-implementations written from the published papers; commits before the
-`v0.3.0` tag remain under GPL-2.0-or-later. File-by-file origins and the
-references consulted are recorded in [PROVENANCE.md](PROVENANCE.md).
+MIT. Versions up to 0.2.1 were GPL-2.0-or-later because parts of them were
+ports of GPL R code; 0.3.0 replaces those parts with independent
+implementations written from the published papers (see
+[PROVENANCE.md](PROVENANCE.md)). Commits before the `v0.3.0` tag remain under
+GPL-2.0-or-later.
 
 ## Citation
 
