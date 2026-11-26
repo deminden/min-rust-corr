@@ -453,7 +453,7 @@ dependencies = [
 
 [[package]]
 name = "mincorr"
-version = "0.3.0-dev"
+version = "0.3.0"
 dependencies = [
  "criterion",
  "ndarray",
@@ -465,7 +465,7 @@ dependencies = [
 
 [[package]]
 name = "mincorr-cli"
-version = "0.3.0-dev"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -483,7 +483,7 @@ dependencies = [
 
 [[package]]
 name = "mincorr-py"
-version = "0.3.0-dev"
+version = "0.3.0"
 dependencies = [
  "mincorr",
  "ndarray",

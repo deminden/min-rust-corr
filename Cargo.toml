@@ -3,15 +3,16 @@ members = ["crates/core", "crates/cli", "crates/py"]
 resolver = "3"
 
 [workspace.package]
-version = "0.3.0-dev"
+version = "0.3.0"
 edition = "2024"
 rust-version = "1.85"
 authors = ["Denis Demin"]
 repository = "https://github.com/deminden/min-rust-corr"
+homepage = "https://github.com/deminden/min-rust-corr"
 license = "MIT"
 
 [workspace.dependencies]
-mincorr = { path = "crates/core", version = "0.3.0-dev" }
+mincorr = { path = "crates/core", version = "0.3.0" }
 ndarray = { version = "0.17", default-features = false, features = ["std"] }
 rayon = "1.11"
 thiserror = "2"

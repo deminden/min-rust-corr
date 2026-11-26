@@ -6,10 +6,13 @@ edition.workspace = true
 rust-version.workspace = true
 authors.workspace = true
 repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/mincorr"
 license.workspace = true
 readme = "../../README.md"
 keywords = ["correlation", "statistics", "kendall", "spearman", "bicor"]
-categories = ["science", "mathematics"]
+categories = ["science", "mathematics", "algorithms"]
+exclude = ["tests/props.proptest-regressions"]
 
 [lib]
 path = "src/lib.rs"

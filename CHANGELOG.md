@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.0 (unreleased)
+## 0.3.0 — 2026-11-26
 
 Complete rewrite under the MIT licence. bicor, hellcor and the Beta-distribution
 functions are new independent implementations written from the published

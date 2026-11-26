@@ -61,9 +61,10 @@ peak RSS.
    verified locally (toolchain download blocked).
 8. `cargo deny` runs in CI; locally the dependency licences were checked from
    `cargo metadata` (all MIT/Apache/BSD/ISC/Zlib/Unicode options available).
-9. The `GTEx_test.sh` script moved to `tools/` and was fixed (package name,
-   heredoc arguments, `--legacy-tar` naming) rather than replaced; CLI behaviour
-   is covered by `crates/cli/tests/cli.rs`.
+9. The legacy GTEx comparison scripts (`GTEx_test.sh`, `investigate_diffs.R`,
+   `pvalue_parity_check.R`, `qbeta_ref.R`) were removed in favour of
+   `tools/make_fixtures.R` and the parity tests; `examples/` keeps the GTEx
+   processing pipeline, updated for the new CLI.
 
 ## Open decisions for the owner (§9 defaults used)
 
@@ -78,7 +79,7 @@ peak RSS.
 - D7 statrs removed (own special functions pass all accuracy tests).
 - D8 resolved: bicor maxPOutliers matches WGCNA exactly.
 - D9 resolved: hellcor default criterion = normalised LOO (matches HellCor).
-- Version string is `0.3.0-dev`; bump to `0.3.0` and tag when releasing.
+- Version is 0.3.0; crates prepared for crates.io (not published).
 
 ## Provenance log
 

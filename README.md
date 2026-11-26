@@ -19,6 +19,14 @@ and **streamed block output** so a 20 000 × 20 000 matrix never has to sit in R
 
 ## Install
 
+| Package | What | Install |
+|---|---|---|
+| `mincorr` (crates.io) | Rust library | `cargo add mincorr` |
+| `mincorr-cli` (crates.io) | command-line tool, binary `mincorr` | `cargo install mincorr-cli` |
+| `mincorrpy` (PyPI, module `mincorr`) | Python package | `pip install mincorrpy` |
+
+From source:
+
 ```bash
 git clone https://github.com/deminden/min-rust-corr && cd min-rust-corr
 cargo build --release            # binary: target/release/mincorr
@@ -26,7 +34,8 @@ cd crates/py && pip install maturin && maturin develop --release   # Python
 ```
 
 Portable builds are the default. For a binary tuned to your own CPU:
-`RUSTFLAGS="-C target-cpu=native" cargo build --release`.
+`RUSTFLAGS="-C target-cpu=native" cargo install mincorr-cli`.
+Minimum supported Rust version: 1.85.
 
 ## Quick start
 
@@ -62,6 +71,9 @@ c = mincorr.corr(a, b, method="hellcor", layout="cross", alpha=6.0)
 r = mincorr.pearson_matrix(x)                                # all v0.2 names still work
 ```
 
+`examples/` contains the GTEx tissue-processing pipeline (normalisation in R,
+correlations with the CLI).
+
 ## Semantics (summary)
 
 - Missing values: `pairwise` (default; each pair uses jointly finite
@@ -71,7 +83,7 @@ r = mincorr.pearson_matrix(x)                                # all v0.2 names st
 - Diagonal p-values are NaN; p-values for n_eff < 3 are NaN.
 - Same inputs and seed → bit-identical results for any number of threads.
 
-Full rules: [docs/semantics.md](docs/semantics.md). Hellcor algorithm:
+API documentation: <https://docs.rs/mincorr>. Full rules: [docs/semantics.md](docs/semantics.md). Hellcor algorithm:
 [docs/hellcor.md](docs/hellcor.md). Agreement with R:
 [docs/parity.md](docs/parity.md).
 

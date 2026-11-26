@@ -6,7 +6,12 @@ edition.workspace = true
 rust-version.workspace = true
 authors.workspace = true
 repository.workspace = true
+homepage.workspace = true
+documentation = "https://github.com/deminden/min-rust-corr#readme"
 license.workspace = true
+readme = "../../README.md"
+keywords = ["correlation", "statistics", "co-expression", "cli", "bioinformatics"]
+categories = ["command-line-utilities", "science"]
 
 [[bin]]
 name = "mincorr"

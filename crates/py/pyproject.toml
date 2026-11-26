@@ -4,12 +4,14 @@ build-backend = "maturin"
 
 [project]
 name = "mincorrpy"
-version = "0.3.0.dev0"
+version = "0.3.0"
 description = "Fast correlation matrices (Pearson, Spearman, Kendall, bicor, Hellinger) from Rust"
+readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [{ name = "Denis Demin" }]
 dependencies = ["numpy>=1.21"]
+urls = { Homepage = "https://github.com/deminden/min-rust-corr" }
 classifiers = ["Programming Language :: Rust", "Programming Language :: Python :: 3", "Topic :: Scientific/Engineering"]
 
 [project.optional-dependencies]
