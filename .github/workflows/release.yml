@@ -3,9 +3,8 @@
 #   2. build   - CLI binaries for Linux / macOS / Windows and Python wheels
 #   3. release - GitHub Release with binaries, wheels, SHA256SUMS and the
 #                CHANGELOG section as release notes
-#   4. publish - crates.io (secret CARGO_REGISTRY_TOKEN) and, when the
-#                repository variable PUBLISH_PYPI is "true", PyPI via trusted
-#                publishing (environment "pypi")
+#   4. publish - crates.io (secret CARGO_REGISTRY_TOKEN) and PyPI (trusted
+#                publishing from environment "pypi"; no token needed)
 name: Release
 
 on:
@@ -87,24 +86,42 @@ jobs:
           path: dist/*
 
   wheels:
-    name: wheels (${{ matrix.os }})
+    name: wheels (${{ matrix.platform }})
     needs: verify
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, windows-latest]
+        include:
+          - { platform: linux-x86_64, os: ubuntu-latest, target: x86_64, manylinux: auto, test: true }
+          - { platform: linux-aarch64, os: ubuntu-24.04-arm, target: aarch64, manylinux: auto, test: true }
+          - { platform: musllinux-x86_64, os: ubuntu-latest, target: x86_64, manylinux: musllinux_1_2, test: false }
+          - { platform: macos-arm64, os: macos-latest, target: aarch64, manylinux: "off", test: true }
+          - { platform: macos-x86_64, os: macos-latest, target: x86_64, manylinux: "off", test: false }
+          - { platform: windows-x86_64, os: windows-latest, target: x64, manylinux: "off", test: true }
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - uses: PyO3/maturin-action@v1
         with:
           working-directory: python
+          target: ${{ matrix.target }}
+          manylinux: ${{ matrix.manylinux }}
           command: build
           args: --release --locked --out dist
-          manylinux: auto
+      - name: Test the wheel
+        if: matrix.test
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest scipy pandas
+          python -m pip install --no-index --find-links python/dist mincorr
+          cd python/tests && python -m pytest -q .
       - uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.os }}
+          name: wheels-${{ matrix.platform }}
           path: python/dist/*
 
   sdist:
@@ -112,11 +129,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
       - uses: PyO3/maturin-action@v1
         with:
           working-directory: python
           command: sdist
           args: --out dist
+      - name: Build and test from the sdist
+        run: |
+          python -m pip install pytest scipy
+          python -m pip install python/dist/*.tar.gz
+          cd python/tests && python -m pytest -q .
       - uses: actions/upload-artifact@v4
         with:
           name: wheels-sdist
@@ -168,7 +194,6 @@ jobs:
 
   pypi:
     needs: release
-    if: vars.PUBLISH_PYPI == 'true'
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
@@ -182,3 +207,4 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist
+          skip-existing: true

@@ -3,20 +3,40 @@ requires = ["maturin>=1.5,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "mincorrpy"
+name = "mincorr"
 version = "0.3.0"
-description = "Fast correlation matrices (Pearson, Spearman, Kendall, bicor, Hellinger) from Rust"
+description = "Fast correlation matrices (Pearson, Spearman, Kendall, biweight midcorrelation, Hellinger correlation) computed in Rust"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [{ name = "Denis Demin" }]
+keywords = ["correlation", "statistics", "kendall", "spearman", "bicor", "hellinger", "co-expression", "bioinformatics"]
 dependencies = ["numpy>=1.21"]
-urls = { Homepage = "https://github.com/deminden/min-rust-corr" }
-classifiers = ["Programming Language :: Rust", "Programming Language :: Python :: 3", "Topic :: Scientific/Engineering"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: MacOS",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Rust",
+  "Topic :: Scientific/Engineering :: Bio-Informatics",
+  "Topic :: Scientific/Engineering :: Mathematics",
+  "Typing :: Typed",
+]
 
 [project.optional-dependencies]
 pandas = ["pandas>=1.3"]
 test = ["pytest", "scipy"]
+
+[project.urls]
+Homepage = "https://github.com/deminden/min-rust-corr"
+Documentation = "https://github.com/deminden/min-rust-corr#readme"
+Source = "https://github.com/deminden/min-rust-corr"
+Changelog = "https://github.com/deminden/min-rust-corr/blob/main/CHANGELOG.md"
+Issues = "https://github.com/deminden/min-rust-corr/issues"
 
 [tool.maturin]
 bindings = "pyo3"

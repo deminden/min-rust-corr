@@ -75,7 +75,7 @@ peak RSS.
   MIT only (not dual MIT/Apache) — current.
 - D2 diagonal p-values NaN — current.
 - D3 default NaN policy pairwise-complete — current.
-- D4: one crate `mincorr` (library + binary); PyPI `mincorrpy` (Rust crate `mincorr-py`,
+- D4: one crate `mincorr` (library + binary); PyPI `mincorr` (renamed from `mincorrpy`; Rust crate `mincorr-py`,
   module `mincorr`); nothing published.
 - D5 CLI default `.tsv.gz`; D6 input row order — current.
 - D7 statrs removed (own special functions pass all accuracy tests).

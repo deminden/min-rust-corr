@@ -2,7 +2,7 @@
 
 [![crates.io](https://img.shields.io/crates/v/mincorr.svg)](https://crates.io/crates/mincorr)
 [![docs.rs](https://img.shields.io/docsrs/mincorr)](https://docs.rs/mincorr)
-[![PyPI](https://img.shields.io/pypi/v/mincorrpy.svg)](https://pypi.org/project/mincorrpy/)
+[![PyPI](https://img.shields.io/pypi/v/mincorr.svg)](https://pypi.org/project/mincorr/)
 [![CI](https://github.com/deminden/min-rust-corr/actions/workflows/ci.yml/badge.svg)](https://github.com/deminden/min-rust-corr/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
@@ -40,7 +40,7 @@ observations (samples).
 | Command-line tool (prebuilt) | download from [GitHub Releases](https://github.com/deminden/min-rust-corr/releases) — Linux (x86_64, aarch64; static), macOS (Apple silicon, Intel), Windows (x86_64, ARM64) |
 | Command-line tool (from source) | `cargo install mincorr` |
 | Rust library | `cargo add mincorr --no-default-features` |
-| Python | `pip install mincorrpy` (import as `mincorr`) |
+| Python | `pip install mincorr` |
 
 The default `cli` feature builds the `mincorr` binary; library users turn it off
 with `--no-default-features` to skip its dependencies. The optional `blas`

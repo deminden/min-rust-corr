@@ -6,7 +6,7 @@
 |---|---|
 | `src/` | library: `api` (Correlator), `engine` (Gram / pairwise engines), `methods`, `layout`, `prep`, `stats`, `options`, `compat` (v0.2 names) |
 | `src/bin/mincorr/` | command-line tool (`cli` feature) |
-| `python/` | Python package `mincorrpy` (PyO3 + maturin; Rust crate `mincorr-py`, not published) |
+| `python/` | Python package `mincorr` on PyPI (PyO3 + maturin; Rust crate `mincorr-py`, not published) |
 | `tests/` | integration tests, including R parity fixtures in `tests/fixtures/` |
 | `benches/`, `examples/timing.rs` | Criterion benchmarks and a quick timing example |
 | `docs/` | semantics, Hellinger correlation notes, parity, benchmarks, releasing |

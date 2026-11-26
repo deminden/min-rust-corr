@@ -51,7 +51,8 @@ from the author's own code.
   generator, so the selected rows differ from v0.2 for the same seed.
 - v0.2 Rust function names (`mincorr::pearson::correlation_matrix`, …) are
   deprecated wrappers returning NaN-filled outputs on invalid input.
-- Python ≥ 3.9 (abi3 wheels).
+- Python: the PyPI distribution is now `mincorr` (was `mincorrpy`; the
+  import name `mincorr` is unchanged); Python ≥ 3.9 (abi3 wheels).
 
 ### Removed
 

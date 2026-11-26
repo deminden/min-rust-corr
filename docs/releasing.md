@@ -3,7 +3,7 @@
 Releases are automated by `.github/workflows/release.yml`, started by pushing a
 version tag. `mincorr` is a single crate (library + `mincorr` binary behind the
 default `cli` feature); the Rust side of the Python package (`mincorr-py`) is
-never published to crates.io.
+never published to crates.io; the Python distribution on PyPI is `mincorr`.
 
 ## One-time setup on GitHub
 
@@ -13,10 +13,12 @@ never published to crates.io.
    `CARGO_REGISTRY_TOKEN`: a crates.io API token with the `publish-new` and
    `publish-update` scopes. Optionally restrict it to an environment named
    `crates-io` (the publish job runs in that environment).
-3. PyPI (optional): add a trusted publisher on pypi.org for project
-   `mincorrpy` → repository `deminden/min-rust-corr`, workflow `release.yml`,
-   environment `pypi`; then set the repository **variable** `PUBLISH_PYPI` to
-   `true`. Without it, wheels are still attached to the GitHub Release.
+3. PyPI (trusted publishing, no token): on pypi.org → Your account →
+   Publishing → *Add a new pending publisher* (GitHub tab) with
+   PyPI project name `mincorr`, owner `deminden`, repository `min-rust-corr`,
+   workflow `release.yml`, environment `pypi`. The first release then creates
+   the project. Optionally create GitHub environments `pypi` and `crates-io`
+   (Settings → Environments) with required reviewers to approve each upload.
 
 ## Cutting a release
 
@@ -34,13 +36,15 @@ The workflow then:
 1. **verify** — checks that the tag equals the crate version, runs fmt,
    clippy, the tests and `cargo publish --dry-run`;
 2. **build** — static Linux binaries (x86_64, aarch64; musl), macOS (Apple
-   silicon, Intel), Windows (x86_64, ARM64), abi3 Python wheels (Linux x86_64
-   and aarch64, macOS, Windows) and the Python sdist;
+   silicon, Intel), Windows (x86_64, ARM64); abi3 Python wheels (one per
+   platform, Python ≥ 3.9) for manylinux x86_64/aarch64, musllinux x86_64,
+   macOS arm64/x86_64 and Windows x86_64, each tested with pytest where the
+   runner can execute it, and the sdist, tested by building from source;
 3. **release** — creates the GitHub Release (shown under *Releases* on the
    repository page) with the archives, wheels and `SHA256SUMS`, using the
    version's CHANGELOG section as release notes;
 4. **publish** — `cargo publish` to crates.io (skipped if that version is
-   already there) and, when enabled, uploads the wheels to PyPI.
+   already there) and the wheels and sdist to PyPI (`skip-existing`).
 
 Archives are named `mincorr-vX.Y.Z-<target>.tar.gz` (`.zip` on Windows) and
 contain the `mincorr` binary, README, LICENSE and CHANGELOG.
