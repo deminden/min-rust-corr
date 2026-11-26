@@ -24,7 +24,7 @@ jobs:
     name: fmt, clippy, docs, file sizes
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -38,26 +38,34 @@ jobs:
       - run: tools/check_file_sizes.sh
 
   test:
-    name: test (${{ matrix.os }}, ${{ matrix.toolchain }})
+    name: test (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        toolchain: [stable]
-        include:
-          - os: ubuntu-latest
-            toolchain: "1.85" # MSRV
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ matrix.toolchain }}
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --workspace --exclude mincorr-py --locked
       - run: cargo test --lib --tests --no-default-features --locked
-      - if: github.event_name == 'schedule' && matrix.os == 'ubuntu-latest' && matrix.toolchain == 'stable'
+      - if: github.event_name == 'schedule' && matrix.os == 'ubuntu-latest'
         run: cargo test --release --locked -- --ignored
+
+  msrv:
+    # The library and the CLI build on Rust 1.85; the test-only dependencies
+    # (proptest, criterion) need a newer toolchain, so MSRV is checked by building.
+    name: MSRV (1.85) build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.85"
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --locked --bins
+      - run: cargo build --locked --lib --no-default-features
 
   python:
     name: python (${{ matrix.os }})
@@ -67,8 +75,8 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - uses: dtolnay/rust-toolchain@stable
@@ -87,7 +95,7 @@ jobs:
     name: crates.io dry run
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo publish --dry-run --locked
@@ -96,7 +104,7 @@ jobs:
     name: licences and sources
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: EmbarkStudios/cargo-deny-action@v2
         with:
           command: check licenses bans sources

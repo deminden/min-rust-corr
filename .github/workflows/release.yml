@@ -23,7 +23,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -58,7 +58,7 @@ jobs:
           - { target: aarch64-pc-windows-msvc, os: windows-latest }
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
@@ -80,7 +80,7 @@ jobs:
           cd dist
           if [[ -n "$exe" ]]; then 7z a -tzip "$name.zip" "$name" > /dev/null; else tar czf "$name.tar.gz" "$name"; fi
           rm -r "$name"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: bin-${{ matrix.target }}
           path: dist/*
@@ -100,8 +100,8 @@ jobs:
           - { platform: windows-x86_64, os: windows-latest, target: x64, manylinux: "off", test: true }
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - uses: PyO3/maturin-action@v1
@@ -119,7 +119,7 @@ jobs:
           python -m pip install pytest scipy pandas
           python -m pip install --no-index --find-links python/dist mincorr
           cd python/tests && python -m pytest -q .
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wheels-${{ matrix.platform }}
           path: python/dist/*
@@ -128,8 +128,8 @@ jobs:
     needs: verify
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - uses: dtolnay/rust-toolchain@stable
@@ -143,7 +143,7 @@ jobs:
           python -m pip install pytest scipy
           python -m pip install python/dist/*.tar.gz
           cd python/tests && python -m pytest -q .
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wheels-sdist
           path: python/dist/*
@@ -154,8 +154,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true
@@ -168,7 +168,7 @@ jobs:
             found { print }
           ' CHANGELOG.md > notes.md
           [ -s notes.md ] || echo "mincorr ${{ needs.verify.outputs.version }}" > notes.md
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           name: mincorr ${{ needs.verify.outputs.version }}
           body_path: notes.md
@@ -180,7 +180,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: crates-io
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - name: Publish unless this version already exists
         env:
@@ -199,7 +199,7 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: wheels-*
           path: dist

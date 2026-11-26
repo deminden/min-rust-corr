@@ -25,6 +25,9 @@ tools/check_file_sizes.sh
 cd python && maturin develop --release && pytest -q tests
 ```
 
+The library and CLI support Rust 1.85 (MSRV); running the test suite needs
+Rust ≥ 1.88 because of the test-only dependencies (proptest, criterion).
+
 Source files stay under 300 lines (hard limit 400) and functions under 60 lines
 (`clippy::too_many_lines`, threshold in `clippy.toml`).
 
