@@ -28,14 +28,15 @@ consulted.
 Leave-one-out coefficients use c₂ = 2√(n−2)/(n−1) and, for point j whose
 nearest neighbour was the removed point i, the second-nearest radius R'_j.
 
-- `HellcorCriterion::Mise` (default, paper Appendix C): minimise
-  A²(K,L) − 2B(K,L), A² = Σ β̂², B = c₁ Σ_i R_i √ĉ^{(−i)}(U_i).
-- `HellcorCriterion::NormalizedLoo`: maximise
-  Σ_i R_i ⟨β^{(−i)}, φ_i⟩ / ‖β^{(−i)}‖ (the variant described in the rewrite
-  specification). **Discrepancy flagged:** the specification and the paper
-  describe different criteria; the paper was followed by default. Whichever
-  matches HellCor's black-box output on the fixtures should become the default
-  (owner decision).
+- `HellcorCriterion::NormalizedLoo` (default): maximise
+  Σ_i R_i ⟨β^{(−i)}, φ_i⟩ / ‖β^{(−i)}‖ over all (K, L). This reproduces
+  `HellCor::HellCor` to ≤ 2.3e-12 on every fixture pair (α = 3, 6, 10).
+- `HellcorCriterion::Mise`: minimise A²(K,L) − 2B(K,L),
+  A² = Σ β̂², B = c₁ Σ_i R_i √ĉ^{(−i)}(U_i), as written in the paper's
+  Appendix C. It agrees with HellCor on most pairs but selects different orders
+  on some (5/435 on `normal_30x40`, about half of the heavily tied pairs).
+
+The choice of default was made by black-box comparison of outputs only.
 
 ## Complexity: O(n² + n·K·L) per pair
 
@@ -64,8 +65,6 @@ p = (1 + #{null ≥ obs}) / (B + 1). Not bit-reproducible against v0.2.
 
 ## Numerical differences vs R
 
-Summation orders differ from the reference implementation, so differences at the
-1e-12–1e-10 level are expected and, rarely, a different (K̂, L̂) when two
-candidates are within rounding. Fixture parity vs `HellCor::HellCor` is pending
-(the HellCor package was not available in the build environment; run
-`Rscript tools/make_fixtures.R` with HellCor installed and re-run the tests).
+Max |Δη| vs `HellCor::HellCor` 1.3 is ≤ 1e-13 on continuous data and ≤ 2.3e-12 on
+heavily tied data (docs/parity.md). Rows that are constant give NaN here and
+≈ 1 in HellCor.

@@ -79,13 +79,14 @@ samples changes η only at rounding level (summation order).
 ## Choices made where the specification was ambiguous
 
 - Bicor `max_p_outliers < 1`: on each side of the median the weight-function
-  scale is `max(9·MAD, distance from the median to the quantile at p resp. 1−p)`
-  (R type-7 quantile). Written from the WGCNA documentation only; parity with
-  WGCNA is unverified until WGCNA fixtures are generated (decision D8).
-- Hellcor order selection follows the paper (Appendix C, MISE criterion
-  A²(K,L) − 2B(K,L)); the normalised variant described in the rewrite
-  specification is available as `HellcorCriterion::NormalizedLoo`. See
-  `docs/hellcor.md`.
+  scale is `max(9·MAD, 2 × distance from the median to the type-7 quantile at
+  p resp. 1−p)`; the factor was fixed by black-box comparison with WGCNA, which
+  it reproduces to ≤ 9e-16 (docs/parity.md).
+- Hellcor order selection uses the normalised leave-one-out criterion by
+  default (it reproduces HellCor on every fixture pair); the paper's MISE
+  criterion is available as `HellcorCriterion::Mise`. See `docs/hellcor.md`.
+- Hellcor on a constant row returns NaN (degenerate-row rule), whereas HellCor
+  returns a value close to 1.
 - Streamed full matrices (`full_blocks`) compute complete rows, so symmetric
   entries are computed twice; the in-memory `full()` computes one triangle and
   mirrors. The CLI uses `full()` for pairwise methods while the matrix fits in

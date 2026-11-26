@@ -31,8 +31,7 @@ fn bicor_default_parity() {
 }
 
 #[test]
-fn bicor_max_p_outliers_report() {
-    // Documented as approximate (decision D8): report, do not assert.
+fn bicor_max_p_outliers_parity() {
     for ds in DATASETS {
         for (tag, p) in [("bicor_mpo010", 0.1), ("bicor_mpo005", 0.05)] {
             let name = format!("{ds}__{tag}_r");
@@ -46,6 +45,7 @@ fn bicor_max_p_outliers_report() {
             let d = out.corr.iter().zip(want.iter()).filter(|(a, b)| a.is_finite() && b.is_finite());
             let worst = d.map(|(a, b)| (a - b).abs()).fold(0.0, f64::max);
             println!("{name}: max|Δr| = {worst:.3e} (maxPOutliers = {p})");
+            assert!(worst <= 1e-13, "{name}: {worst:e}");
         }
     }
 }
@@ -63,7 +63,14 @@ fn hellcor_parity_report() {
         let out = c.full(x.view()).unwrap();
         let want = load(&name);
         let (mut close, mut total, mut worst) = (0usize, 0usize, 0.0f64);
+        // HellCor returns ~1 for a constant row against any other row; by
+        // design (docs/semantics.md) degenerate rows give NaN here.
+        let constant = |i: usize| x.row(i).iter().all(|v| *v == x[[i, 0]]);
         for ((i, j), w) in want.indexed_iter() {
+            if constant(i) || constant(j) {
+                assert!(out.corr[[i, j]].is_nan());
+                continue;
+            }
             if i < j && w.is_finite() {
                 let d = (out.corr[[i, j]] - w).abs();
                 total += 1;
@@ -72,6 +79,32 @@ fn hellcor_parity_report() {
             }
         }
         println!("{name}: {close}/{total} pairs within 1e-9, max|Δη| = {worst:.3e}");
-        assert!(total == 0 || close * 10 >= total * 9, "{name}: only {close}/{total} pairs agree");
+        assert_eq!(close, total, "{name}: only {close}/{total} pairs agree");
+    }
+}
+
+#[test]
+fn hellcor_alpha_parity() {
+    for ds in DATASETS {
+        for (tag, alpha) in [("hellcor_alpha03", 3.0), ("hellcor_alpha10", 10.0)] {
+            let name = format!("{ds}__{tag}_r");
+            if !exists(&name) {
+                continue;
+            }
+            let x = load(&format!("{ds}__input"));
+            let out = Correlator::new(Method::Hellcor(HellcorParams { alpha, ..Default::default() }))
+                .full(x.view())
+                .unwrap();
+            let want = load(&name);
+            let constant = |i: usize| x.row(i).iter().all(|v| *v == x[[i, 0]]);
+            let mut worst = 0.0f64;
+            for ((i, j), w) in want.indexed_iter() {
+                if i != j && !constant(i) && !constant(j) && w.is_finite() {
+                    worst = worst.max((out.corr[[i, j]] - w).abs());
+                }
+            }
+            println!("{name}: max|Δη| = {worst:.3e}");
+            assert!(worst <= 1e-9, "{name}: {worst:e}");
+        }
     }
 }

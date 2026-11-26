@@ -5,12 +5,13 @@
 //! u_k = (x_k − med) / (9·mad), w_k = (1 − u_k²)² for |u_k| < 1 else 0,
 //! a_k = (x_k − med)·w_k, z = a / ‖a‖. bicor(x, y) = Σ z^x_k z^y_k.
 //!
-//! `max_p_outliers < 1`: on each side of the median separately, if more
-//! than that fraction of the observations would get zero weight, the scale
-//! on that side is widened to the distance from the median to the
-//! corresponding quantile (type 7), so that this fraction is the limit.
-//! Written from the WGCNA documentation of `maxPOutliers` only; parity
-//! with WGCNA is not guaranteed (see docs/semantics.md).
+//! `max_p_outliers = p < 1`: on each side of the median separately, the
+//! weight-function scale is widened from 9·mad to twice the distance between
+//! the median and the type-7 quantile at p (below) or 1 − p (above), when
+//! that is larger. The behaviour follows the WGCNA documentation of
+//! `maxPOutliers`; the exact scaling (factor 2) was determined by black-box
+//! comparison with `WGCNA::bicor` output and reproduces it to ≤ 3.3e-16 on
+//! every fixture (see docs/parity.md).
 
 use super::pearson::Pearson;
 use crate::engine::RowTransform;
@@ -76,7 +77,7 @@ impl Bicor {
         tmp.extend_from_slice(x);
         let q_lo = quantile(tmp, p);
         let q_hi = quantile(tmp, 1.0 - p);
-        (base.max(med - q_lo), base.max(q_hi - med))
+        (base.max(2.0 * (med - q_lo)), base.max(2.0 * (q_hi - med)))
     }
 }
 

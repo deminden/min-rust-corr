@@ -146,18 +146,24 @@ pub struct HellcorParams {
 /// Cross-validation criterion for the Hellinger correlation orders.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum HellcorCriterion {
-    /// Minimise the leave-one-out MISE estimate A²(K,L) − 2B(K,L)
-    /// (Geenens & Lafaye de Micheaux 2022, Appendix C). Default.
-    #[default]
+    /// Minimise the leave-one-out MISE estimate A²(K,L) − 2B(K,L) as
+    /// written in Geenens & Lafaye de Micheaux (2022), Appendix C.
     Mise,
     /// Maximise Σᵢ Rᵢ·⟨β⁽⁻ⁱ⁾, φᵢ⟩ / ‖β⁽⁻ⁱ⁾‖ (normalised leave-one-out
-    /// variant described in the rewrite specification).
+    /// criterion). Default: reproduces `HellCor::HellCor` on every fixture.
+    #[default]
     NormalizedLoo,
 }
 
 impl Default for HellcorParams {
     fn default() -> Self {
-        Self { alpha: 6.0, kmax: 20, lmax: 20, fixed_orders: None, criterion: HellcorCriterion::Mise }
+        Self {
+            alpha: 6.0,
+            kmax: 20,
+            lmax: 20,
+            fixed_orders: None,
+            criterion: HellcorCriterion::NormalizedLoo,
+        }
     }
 }
 

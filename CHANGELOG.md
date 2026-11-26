@@ -19,7 +19,7 @@ from the author's own code.
   `--min-abs-r/--max-p/--top-k`; CSV input; streaming output with bounded memory.
 - Python: `mincorr.corr()`, `mincorr.pair()`, `mincorr.frames.corr_frame()`
   (pandas), type stubs; accepts float32, Fortran-ordered and strided arrays.
-- `HellcorCriterion` (paper's MISE criterion by default, normalised variant).
+- `HellcorCriterion` (normalised leave-one-out by default, matching HellCor; the paper's MISE criterion as an option).
 - Reference fixtures from R, property tests, CI on three OSes, cargo-deny.
 
 ### Changed (breaking)
