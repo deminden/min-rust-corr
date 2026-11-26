@@ -45,9 +45,9 @@ peak RSS.
 
 1. `full()` is implemented directly (triangle + mirror) rather than on top of
    `full_blocks()`; streaming computes complete rows, so it evaluates symmetric
-   pairs twice. Both share the same engine and layout executor. The CLI keeps
-   the triangle trick for pairwise methods while the matrix fits in
-   `--memory-limit-gb`.
+   pairs twice unless `Correlator::triangle_cache` allows computing the triangle
+   in memory (the CLI sets it from `--memory-limit-gb`). Both paths share the
+   same engine and layout executor.
 2. Hellcor nearest neighbours are brute force for all n (no uniform grid yet);
    fine for the target regime (n ≲ 2000), parked in docs/ideas.md.
 3. Kendall bitsets are used for n ≤ 128 only (memory bound); larger n uses
@@ -63,8 +63,10 @@ peak RSS.
    `cargo metadata` (all MIT/Apache/BSD/ISC/Zlib/Unicode options available).
 9. The legacy GTEx comparison scripts (`GTEx_test.sh`, `investigate_diffs.R`,
    `pvalue_parity_check.R`, `qbeta_ref.R`) were removed in favour of
-   `tools/make_fixtures.R` and the parity tests; `examples/` keeps the GTEx
+   `tools/make_fixtures.R` and the parity tests; `examples/gtex/` keeps the GTEx
    processing pipeline, updated for the new CLI.
+10. The library and the CLI are one crate (`mincorr`, binary behind the default
+    `cli` feature) instead of separate `mincorr` / `mincorr-cli` crates.
 
 ## Open decisions for the owner (§9 defaults used)
 
@@ -73,7 +75,7 @@ peak RSS.
   MIT only (not dual MIT/Apache) — current.
 - D2 diagonal p-values NaN — current.
 - D3 default NaN policy pairwise-complete — current.
-- D4 names kept (`mincorr`, `mincorr-cli`, `mincorr-py` / PyPI `mincorrpy`,
+- D4: one crate `mincorr` (library + binary); PyPI `mincorrpy` (Rust crate `mincorr-py`,
   module `mincorr`); nothing published.
 - D5 CLI default `.tsv.gz`; D6 input row order — current.
 - D7 statrs removed (own special functions pass all accuracy tests).

@@ -37,8 +37,7 @@ Thumbs.db
 *.log
 
 # Test fixtures and tool inputs are tracked
-!crates/core/tests/fixtures/**
-!crates/cli/tests/data/**
+!tests/fixtures/**
 
 # Python build artefacts
 __pycache__/

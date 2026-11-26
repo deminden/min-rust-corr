@@ -1,7 +1,7 @@
 # Parity with R
 
 Reference values come from `tools/make_fixtures.R` (black-box use of public R
-APIs; R 4.6.2 with WGCNA 1.74 and HellCor 1.3, see MANIFEST.json). Tests: `crates/core/tests/parity_rank_methods.rs`,
+APIs; R 4.6.2 with WGCNA 1.74 and HellCor 1.3, see MANIFEST.json). Tests: `tests/parity_rank_methods.rs`,
 `beta_fixtures.rs`, `parity_robust.rs`. Columns give max |Δr| over all off-diagonal pairs and the max
 relative difference of p-values (`cor.test(..., exact = FALSE)`), under
 pairwise-complete handling of missing values.

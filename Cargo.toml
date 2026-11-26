@@ -1,5 +1,74 @@
+[package]
+name = "mincorr"
+description = "Fast correlation matrices (Pearson, Spearman, Kendall tau-b, biweight midcorrelation, Hellinger correlation): library and CLI"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/mincorr"
+license.workspace = true
+readme = "README.md"
+keywords = ["correlation", "statistics", "kendall", "bicor", "co-expression"]
+categories = ["science", "mathematics", "algorithms", "command-line-utilities"]
+include = [
+  "src/**",
+  "tests/*.rs",
+  "tests/common/**",
+  "tests/fixtures/**",
+  "benches/**",
+  "examples/*.rs",
+  "README.md",
+  "LICENSE",
+  "CHANGELOG.md",
+]
+
+[features]
+default = ["cli"]
+## The `mincorr` command-line tool (disable with `default-features = false`
+## when only the library is needed).
+cli = ["dep:clap", "dep:flate2", "dep:tar", "dep:anyhow", "dep:ryu"]
+## Link a system BLAS through ndarray for the Gram (matrix-product) kernel.
+blas = ["ndarray/blas"]
+
+[[bin]]
+name = "mincorr"
+path = "src/bin/mincorr/main.rs"
+required-features = ["cli"]
+doc = false
+
+[[test]]
+name = "cli"
+required-features = ["cli"]
+
+[[bench]]
+name = "methods"
+harness = false
+
+[dependencies]
+ndarray = { workspace = true, features = ["rayon"] }
+rayon.workspace = true
+thiserror.workspace = true
+rand_chacha.workspace = true
+clap = { workspace = true, optional = true }
+flate2 = { workspace = true, optional = true }
+tar = { workspace = true, optional = true }
+anyhow = { workspace = true, optional = true }
+ryu = { workspace = true, optional = true }
+
+[dev-dependencies]
+proptest.workspace = true
+criterion.workspace = true
+assert_cmd.workspace = true
+predicates.workspace = true
+tempfile.workspace = true
+
+[lints]
+workspace = true
+
 [workspace]
-members = ["crates/core", "crates/cli", "crates/py"]
+members = [".", "python"]
 resolver = "3"
 
 [workspace.package]
@@ -12,7 +81,7 @@ homepage = "https://github.com/deminden/min-rust-corr"
 license = "MIT"
 
 [workspace.dependencies]
-mincorr = { path = "crates/core", version = "0.3.0" }
+mincorr = { path = ".", version = "0.3.0", default-features = false }
 ndarray = { version = "0.17", default-features = false, features = ["std"] }
 rayon = "1.11"
 thiserror = "2"

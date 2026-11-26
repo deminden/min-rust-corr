@@ -10,7 +10,8 @@ from the author's own code.
 ### Added
 
 - `Correlator` builder API: `full`, `cross`, `upper`, `pair`, streaming
-  `full_blocks` / `cross_blocks`, `NanPolicy`, `PvalueSpec`, method parameters.
+  `full_blocks` / `cross_blocks` (optional `triangle_cache`), `NanPolicy`
+  (also parsed from strings), `PvalueSpec::auto`, `Method::with_settings`.
 - `CorrError` / `Result` everywhere: no panics on user data.
 - CLI: `-o/--output`, `--format tsv|tsv.gz|npy|edges`, `--legacy-tar`,
   `--nan-policy`, `--delimiter`, `--na-strings`, `--sort-rows`, `--digits`,
@@ -32,7 +33,9 @@ from the author's own code.
   Gzip output is written as concatenated gzip members (read transparently by
   gzip/zcat, R, pandas and Python's gzip module).
 - Messages go to stderr; stdout carries only requested data.
-- The binary is `mincorr`; `mincorr-cli` remains as an alias for one release.
+- One crate: the library and the `mincorr` binary ship together in `mincorr`
+  (binary behind the default `cli` feature); the separate `mincorr-cli`
+  package and binary name are gone.
 - Unparsable input cells are errors (with line and column) instead of silent
   NaN; ragged rows and duplicate IDs are errors.
 - Missing values: one policy for all methods, default pairwise-complete

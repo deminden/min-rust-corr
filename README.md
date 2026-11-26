@@ -19,23 +19,30 @@ and **streamed block output** so a 20 000 × 20 000 matrix never has to sit in R
 
 ## Install
 
-| Package | What | Install |
-|---|---|---|
-| `mincorr` (crates.io) | Rust library | `cargo add mincorr` |
-| `mincorr-cli` (crates.io) | command-line tool, binary `mincorr` | `cargo install mincorr-cli` |
-| `mincorrpy` (PyPI, module `mincorr`) | Python package | `pip install mincorrpy` |
+One Rust crate, `mincorr`, provides both the library and the `mincorr`
+command-line tool; the Python package is `mincorrpy` (module `mincorr`).
+
+```bash
+cargo install mincorr                                   # CLI
+cargo add mincorr --no-default-features                 # library only (no CLI dependencies)
+pip install mincorrpy                                   # Python
+```
+
+The `cli` feature (on by default) builds the binary and pulls in its
+dependencies (clap, flate2, tar); library users can switch it off as above.
+The optional `blas` feature links a system BLAS for the matrix-product kernel.
 
 From source:
 
 ```bash
 git clone https://github.com/deminden/min-rust-corr && cd min-rust-corr
-cargo build --release            # binary: target/release/mincorr
-cd crates/py && pip install maturin && maturin develop --release   # Python
+cargo build --release                                   # target/release/mincorr
+cd python && pip install maturin && maturin develop --release
 ```
 
-Portable builds are the default. For a binary tuned to your own CPU:
-`RUSTFLAGS="-C target-cpu=native" cargo install mincorr-cli`.
-Minimum supported Rust version: 1.85.
+Portable builds are the default; for a binary tuned to your CPU use
+`RUSTFLAGS="-C target-cpu=native" cargo install mincorr`. Minimum supported
+Rust version: 1.85.
 
 ## Quick start
 
@@ -57,7 +64,7 @@ let out = Correlator::new(Method::Kendall)
     .pvalues(PvalueSpec::Analytic)
     .nan_policy(NanPolicy::PairwiseComplete)
     .full(data.view())?;                 // out.corr, out.pvalues: Array2<f64>
-Correlator::new(Method::Pearson).full_blocks(data.view(), |block| { /* write */ Ok(()) })?;
+Correlator::new(Method::Pearson).full_blocks(data.view(), |block| { /* write rows */ Ok(()) })?;
 ```
 
 Python:
@@ -71,8 +78,8 @@ c = mincorr.corr(a, b, method="hellcor", layout="cross", alpha=6.0)
 r = mincorr.pearson_matrix(x)                                # all v0.2 names still work
 ```
 
-`examples/` contains the GTEx tissue-processing pipeline (normalisation in R,
-correlations with the CLI).
+`examples/gtex/` contains the GTEx tissue-processing pipeline (normalisation in
+R, correlations with the CLI).
 
 ## Semantics (summary)
 
@@ -96,6 +103,18 @@ API documentation: <https://docs.rs/mincorr>. Full rules: [docs/semantics.md](do
 - Kendall uses pair-sign bitsets for n ≤ 128 and Knight's O(n log n) algorithm
   otherwise; hellcor costs O(n² + n·K·L) per pair with per-sample-size tables.
 - Measured timings: [docs/benchmarks.md](docs/benchmarks.md).
+
+## Repository layout
+
+| Path | Contents |
+|---|---|
+| `src/` | library: `api` (Correlator), `engine` (Gram / pairwise engines), `methods`, `layout`, `prep`, `stats`, `options`, `compat` (v0.2 names) |
+| `src/bin/mincorr/` | command-line tool (`cli` feature) |
+| `python/` | Python package `mincorrpy` (PyO3 + maturin) |
+| `tests/`, `benches/`, `examples/timing.rs` | tests incl. R parity fixtures, Criterion benchmarks, timing example |
+| `docs/` | semantics, hellcor notes, parity, benchmarks, releasing |
+| `tools/` | fixture generator (R), size check, Python benchmark |
+| `examples/gtex/` | GTEx processing pipeline |
 
 ## Licence
 

@@ -3,14 +3,14 @@
 #
 # Uses only public R APIs (stats, WGCNA::bicor/bicorAndPvalue, HellCor::HellCor)
 # as numerical oracles. Writes small deterministic TSV fixtures into
-# crates/core/tests/fixtures/ plus MANIFEST.json (R/package versions, seed).
+# tests/fixtures/ plus MANIFEST.json (R/package versions, seed).
 #
 # Usage: Rscript tools/make_fixtures.R [out_dir]
 # Sections needing WGCNA or HellCor are skipped (and recorded as skipped in the
 # manifest) when the package is not installed.
 
 args <- commandArgs(trailingOnly = TRUE)
-out_dir <- if (length(args) >= 1) args[1] else "crates/core/tests/fixtures"
+out_dir <- if (length(args) >= 1) args[1] else "tests/fixtures"
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 SEED <- 20261124L
 

@@ -455,30 +455,20 @@ dependencies = [
 name = "mincorr"
 version = "0.3.0"
 dependencies = [
- "criterion",
- "ndarray",
- "proptest",
- "rand_chacha 0.10.0",
- "rayon",
- "thiserror",
-]
-
-[[package]]
-name = "mincorr-cli"
-version = "0.3.0"
-dependencies = [
  "anyhow",
  "assert_cmd",
  "clap",
+ "criterion",
  "flate2",
- "mincorr",
  "ndarray",
  "predicates",
+ "proptest",
  "rand_chacha 0.10.0",
  "rayon",
  "ryu",
  "tar",
  "tempfile",
+ "thiserror",
 ]
 
 [[package]]

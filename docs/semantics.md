@@ -2,7 +2,7 @@
 
 These rules apply identically to every method (Pearson, Spearman, Kendall,
 bicor, hellcor) and every layout (full, cross, packed upper, streamed blocks).
-They are tested generically in `crates/core/tests/invariants.rs`.
+They are tested generically in `tests/invariants.rs`.
 
 ## Data convention
 
@@ -89,5 +89,6 @@ samples changes η only at rounding level (summation order).
   returns a value close to 1.
 - Streamed full matrices (`full_blocks`) compute complete rows, so symmetric
   entries are computed twice; the in-memory `full()` computes one triangle and
-  mirrors. The CLI uses `full()` for pairwise methods while the matrix fits in
+  mirrors. `Correlator::triangle_cache(bytes)` lets `full_blocks` compute the
+  triangle once in memory when the output fits; the CLI sets it from
   `--memory-limit-gb`.

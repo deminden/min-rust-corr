@@ -1,0 +1,148 @@
+//! Gram engine: Z = transform(rows), corr = Z_a · Z_bᵀ computed in row
+//! blocks with a matrix-product kernel, plus the per-pair slow path for
+//! rows with missing values (which reuses the method's transform).
+
+use super::dispatch::{Cell, Grid, RowState, row_states};
+use super::{Engine, RowTransform, clamp_corr};
+use crate::error::Result;
+use crate::options::NanPolicy;
+use crate::prep::RowStatus;
+use crate::prep::validity::{gather_common, gather_finite, to_contiguous};
+use crate::stats::tdist::corr_t_pvalue;
+use ndarray::linalg::general_mat_mul;
+use ndarray::{Array2, ArrayView2, ArrayViewMut2, Axis, s};
+use rayon::prelude::*;
+use std::ops::Range;
+
+/// One input matrix after transformation.
+pub struct GramSide<'a> {
+    data: ArrayView2<'a, f64>,
+    z: Array2<f64>,
+    state: Vec<RowState>,
+}
+
+impl<'a> GramSide<'a> {
+    /// Transform every row of `data` in parallel.
+    pub fn build<T: RowTransform>(t: &T, data: ArrayView2<'a, f64>, policy: NanPolicy) -> Result<Self> {
+        let mut state = row_states(data, policy)?;
+        let m = data.ncols();
+        let mut z = Array2::<f64>::zeros((data.nrows(), m));
+        z.axis_iter_mut(Axis(0)).into_par_iter().zip(state.par_iter_mut()).enumerate().for_each_init(
+            || (T::Scratch::default(), Vec::new(), Vec::new()),
+            |(s, buf, tmp), (i, (mut zrow, st))| {
+                let row = data.row(i);
+                let ok = match *st {
+                    RowState::Dead => true,
+                    RowState::Clean => match zrow.as_slice_mut() {
+                        Some(out) => t.transform(to_contiguous(row, buf), out, s) == RowStatus::Ok,
+                        None => false,
+                    },
+                    RowState::Missing => {
+                        gather_finite(row, buf);
+                        tmp.resize(buf.len(), 0.0);
+                        t.transform(buf, tmp, s) == RowStatus::Ok
+                    }
+                };
+                if !ok {
+                    *st = RowState::Dead;
+                    zrow.fill(0.0);
+                }
+            },
+        );
+        Ok(Self { data, z, state })
+    }
+
+    /// Number of rows.
+    pub fn n_rows(&self) -> usize {
+        self.z.nrows()
+    }
+}
+
+/// Gram engine over one (symmetric) or two (cross) sides.
+pub struct GramEngine<'a, T: RowTransform> {
+    t: &'a T,
+    a: GramSide<'a>,
+    b: Option<GramSide<'a>>,
+}
+
+/// Per-thread scratch of the Gram engine.
+pub struct GramScratch<S> {
+    inner: S,
+    gx: Vec<f64>,
+    gy: Vec<f64>,
+    tx: Vec<f64>,
+    ty: Vec<f64>,
+}
+
+impl<'a, T: RowTransform> GramEngine<'a, T> {
+    /// Build a symmetric (`b = None`) or cross engine.
+    pub fn new(t: &'a T, a: GramSide<'a>, b: Option<GramSide<'a>>) -> Self {
+        Self { t, a, b }
+    }
+
+    fn side_b(&self) -> &GramSide<'a> {
+        self.b.as_ref().unwrap_or(&self.a)
+    }
+
+    /// Correlation and n_eff of a pair where at least one row has
+    /// missing values.
+    fn slow_pair(&self, i: usize, j: usize, s: &mut GramScratch<T::Scratch>) -> (f64, usize) {
+        gather_common(self.a.data.row(i), self.side_b().data.row(j), &mut s.gx, &mut s.gy);
+        let n = s.gx.len();
+        s.tx.resize(n, 0.0);
+        s.ty.resize(n, 0.0);
+        let ok = self.t.transform(&s.gx, &mut s.tx, &mut s.inner) == RowStatus::Ok
+            && self.t.transform(&s.gy, &mut s.ty, &mut s.inner) == RowStatus::Ok;
+        if !ok {
+            return (f64::NAN, n);
+        }
+        (clamp_corr(dot(&s.tx, &s.ty)), n)
+    }
+}
+
+/// Plain dot product.
+pub fn dot(x: &[f64], y: &[f64]) -> f64 {
+    x.iter().zip(y).map(|(a, b)| a * b).sum()
+}
+
+impl<T: RowTransform> Engine for GramEngine<'_, T> {
+    type Scratch = GramScratch<T::Scratch>;
+
+    fn scratch(&self) -> Self::Scratch {
+        GramScratch { inner: T::Scratch::default(), gx: vec![], gy: vec![], tx: vec![], ty: vec![] }
+    }
+
+    fn n_cols(&self) -> usize {
+        self.side_b().n_rows()
+    }
+
+    fn fill(
+        &self,
+        rows: Range<usize>,
+        out: &mut [f64],
+        pout: Option<&mut [f64]>,
+        upper_only: bool,
+        s: &mut Self::Scratch,
+    ) {
+        let sym = self.b.is_none();
+        let b = self.side_b();
+        let nb = b.n_rows();
+        let m = self.a.data.ncols();
+        let upper = upper_only && sym;
+        let c0 = if upper { rows.start } else { 0 };
+        if let Ok(mut ov) = ArrayViewMut2::from_shape((rows.len(), nb), &mut *out) {
+            let lhs = self.a.z.slice(s![rows.clone(), ..]);
+            let rhs = b.z.slice(s![c0.., ..]);
+            general_mat_mul(1.0, &lhs, &rhs.t(), 0.0, &mut ov.slice_mut(s![.., c0..]));
+        }
+        let want_p = pout.is_some();
+        let grid = Grid { sym, a: &self.a.state, b: &b.state, upper };
+        grid.fill(rows, out, pout, |i, j, cell, gemm| {
+            let (r, n) = match cell {
+                Cell::Slow => self.slow_pair(i, j, s),
+                _ => (clamp_corr(gemm), m),
+            };
+            (r, if want_p { corr_t_pvalue(r, n) } else { f64::NAN })
+        });
+    }
+}

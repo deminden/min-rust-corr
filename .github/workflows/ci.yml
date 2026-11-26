@@ -38,6 +38,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with: { toolchain: "${{ matrix.toolchain }}" }
       - run: cargo test --workspace --exclude mincorr-py
+      - run: cargo test --lib --tests --no-default-features
 
   nightly-statistical:
     if: github.event_name == 'schedule'
@@ -79,4 +80,4 @@ jobs:
           python -m venv .venv
           . .venv/bin/activate
           pip install maturin pytest numpy scipy pandas
-          cd crates/py && maturin develop --release && pytest -q tests
+          cd python && maturin develop --release && pytest -q tests
